@@ -1064,11 +1064,10 @@ function renderBanner() {
   const pn = G.turn === 0
     ? '<span class="hl-p1">Giocatore 1</span>'
     : '<span class="hl-p2">Giocatore 2</span>';
-  const dir = G.turn === 0 ? 'entra da casella 1 →' : '← entra da casella 5';
   const step = G.pieceStep + 1;
   const total = G.turnNum === 1 ? 1 : 2;
   document.getElementById('tbanner').innerHTML =
-    `${pn} — inserisci pezzo <b>${step} di ${total}</b> &nbsp;·&nbsp; <span style="color:var(--text3)">${dir}</span>`;
+    `${pn} — inserisci pezzo <b>${step} di ${total}</b>`;
 }
 
 function renderField() {
