@@ -393,6 +393,23 @@
 
   /* ── LAYOUT SYSTEM ─────────────────────────────────────── */
 
+  /* Banner + Phase sulla stessa riga su mobile */
+  .banner-phase-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .banner-phase-row .turn-banner {
+    flex: 1;
+    margin-bottom: 0;
+  }
+  .banner-phase-row .phase-indicator {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
   /* MOBILE default: tutto verticale, basket orizzontale scrollabile */
   .main-layout { display: flex; flex-direction: column; gap: 12px; }
   .col-field { width: 100%; }
@@ -418,7 +435,8 @@
   /* Basket cards in mobile: larghezza fissa per lo scroll */
   .bcard { flex: 0 0 110px; min-width: 110px; }
 
-  /* Log mobile: visibile in fondo, log desktop: nascosto */
+  /* Phase desktop: nascosto su mobile */
+  .phase-desktop { display: none; }
   .log-mobile { display: block; margin-top: 16px; }
   .log-desktop { display: none; }
 
@@ -466,6 +484,17 @@
     .ps-piece-name { font-size: 24px; }
     .ps-piece-vals { font-size: 20px; }
 
+    /* Banner e phase indicator tornano verticali su desktop */
+    .banner-phase-row {
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 0;
+    }
+    .banner-phase-row .turn-banner { margin-bottom: 12px; }
+    /* Su desktop: phase mobile nascosto, phase desktop visibile */
+    .banner-phase-row .phase-indicator { display: none; }
+    .phase-desktop { display: flex; }
+
     /* Log: nascosto sotto il campo, visibile nella sidebar */
     .log-mobile { display: none; }
     .log-desktop { display: block; margin-top: 12px; }
@@ -475,6 +504,7 @@
   @media (max-width: 480px) {
     .bc-name { font-size: 13px; }
     .cell { min-height: 78px; }
+    .bcv { font-size: 6px; padding: 1px 2px; }
   }
 
   .header-row { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:4px; position:relative; }
@@ -565,8 +595,11 @@
     </div>
   </div>
 
-  <!-- TURN BANNER -->
-  <div class="turn-banner" id="tbanner"></div>
+  <!-- TURN BANNER + PHASE SLOTS (stessa riga su mobile) -->
+  <div class="banner-phase-row">
+    <div class="turn-banner" id="tbanner"></div>
+    <div class="phase-indicator" id="phase-slots"></div>
+  </div>
 
   <!-- MAIN LAYOUT: campo sx + sidebar dx su desktop -->
   <div class="main-layout">
@@ -581,9 +614,8 @@
         </div>
         <div class="field-row" id="field"></div>
       </div>
-
-      <!-- PHASE SLOTS: sempre sotto il campo -->
-      <div class="phase-indicator" id="phase-slots"></div>
+      <!-- PHASE SLOTS desktop: sotto il campo, nascosto su mobile -->
+      <div class="phase-indicator phase-desktop" id="phase-slots-desktop"></div>
     </div>
 
     <!-- COLONNA DESTRA: basket + controlli -->
@@ -1098,28 +1130,37 @@ function renderField() {
 }
 
 function renderPhaseSlots() {
-  const el = document.getElementById('phase-slots');
-  el.innerHTML = '';
   const totalSlots = G.turnNum === 1 ? 1 : 2;
+  const html = buildPhaseSlotsHTML(totalSlots);
+  // Aggiorna entrambi i contenitori (mobile nel banner-row, desktop sotto il campo)
+  ['phase-slots', 'phase-slots-desktop'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+}
+
+function buildPhaseSlotsHTML(totalSlots) {
+  let html = '';
   for (let s = 0; s < totalSlots; s++) {
-    const div = document.createElement('div');
+    let cls, content;
     if (s < G.pieceStep) {
-      div.className = 'phase-slot ps-done';
-      div.innerHTML = `<span class="ps-label">PEZZO ${s+1}</span><span>✓ Inserito</span>`;
+      cls = 'phase-slot ps-done';
+      content = `<span class="ps-label">PEZZO ${s+1}</span><span>✓ Inserito</span>`;
     } else if (s === G.pieceStep) {
-      div.className = 'phase-slot ps-active';
+      cls = 'phase-slot ps-active';
       if (G.selected >= 0) {
         const p = G.basket[G.selected];
-        div.innerHTML = `<span class="ps-label">PEZZO ${s+1} — SELEZIONATO</span><span class="ps-piece-name">${p.name}</span><span class="ps-piece-vals">C:${p.z[0]} R:${p.z[1]} V:${p.z[2]}</span>`;
+        content = `<span class="ps-label">PEZZO ${s+1} — SELEZIONATO</span><span class="ps-piece-name">${p.name}</span><span class="ps-piece-vals">C:${p.z[0]} R:${p.z[1]} V:${p.z[2]}</span>`;
       } else {
-        div.innerHTML = `<span class="ps-label">PEZZO ${s+1}</span><span>← scegli dal basket</span>`;
+        content = `<span class="ps-label">PEZZO ${s+1}</span><span>← scegli dal basket</span>`;
       }
     } else {
-      div.className = 'phase-slot';
-      div.innerHTML = `<span class="ps-label">PEZZO ${s+1}</span>`;
+      cls = 'phase-slot';
+      content = `<span class="ps-label">PEZZO ${s+1}</span>`;
     }
-    el.appendChild(div);
+    html += `<div class="${cls}">${content}</div>`;
   }
+  return html;
 }
 
 function renderBasket() {
