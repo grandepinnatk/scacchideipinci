@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scacchi dei Pinci</title>
+<style>
+  :root {
+    --bg: #0f0e0d;
+    --bg2: #1a1917;
+    --bg3: #242320;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #e8e5df;
+    --text2: #8a8780;
+    --text3: #4a4845;
+    --p1: #4a9eff;
+    --p1bg: rgba(74,158,255,0.12);
+    --p1border: rgba(74,158,255,0.35);
+    --p2: #ff6b47;
+    --p2bg: rgba(255,107,71,0.12);
+    --p2border: rgba(255,107,71,0.35);
+    --gold: #e8a020;
+    --goldbg: rgba(232,160,32,0.15);
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  #app { width: 100%; max-width: 700px; }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: normal;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .header p { font-size: 12px; color: var(--text3); font-family: monospace; letter-spacing: 0.1em; }
+
+  /* SCOREBOARD */
+  .scoreboard {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .score-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    transition: border-color 0.25s;
+  }
+  .score-card.p1 { text-align: left; }
+  .score-card.p2 { text-align: right; }
+  .score-card.active.p1 { border-color: var(--p1border); }
+  .score-card.active.p2 { border-color: var(--p2border); }
+  .sc-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; font-family: monospace; letter-spacing: 0.08em; }
+  .sc-pts { font-size: 32px; line-height: 1; margin-bottom: 6px; }
+  .score-card.p1 .sc-pts { color: var(--p1); }
+  .score-card.p2 .sc-pts { color: var(--p2); }
+  .sc-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .sc-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .score-card.p1 .sc-fill { background: var(--p1); }
+  .score-card.p2 .sc-fill { background: var(--p2); }
+  .score-mid { text-align: center; }
+  .sc-turn-label { font-size: 10px; color: var(--text3); font-family: monospace; margin-bottom: 4px; }
+  .sc-turn-num { font-size: 22px; color: var(--text2); }
+
+  /* TURN INFO */
+  .turn-banner {
+    text-align: center;
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    background: var(--bg2);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .turn-banner .hl-p1 { color: var(--p1); font-weight: bold; }
+  .turn-banner .hl-p2 { color: var(--p2); font-weight: bold; }
+
+  /* CAMPO */
+  .field-section { margin-bottom: 20px; }
+  .zone-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .zone-lbl {
+    font-size: 10px;
+    color: var(--text3);
+    text-align: center;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+    padding: 2px 0;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+  .cell {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    padding: 5px 4px;
+    gap: 4px;
+    position: relative;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .cell.zone-center { border-color: rgba(232,160,32,0.2); background: rgba(232,160,32,0.04); }
+  .cell.combat-flash { box-shadow: 0 0 0 2px var(--gold); border-color: var(--gold); }
+  .cell-num {
+    font-size: 9px;
+    color: var(--text3);
+    font-family: monospace;
+    text-align: center;
+    margin-bottom: 2px;
+  }
+  .piece-chip {
+    border-radius: 5px;
+    padding: 4px 5px;
+    font-size: 9px;
+    line-height: 1.4;
+    position: relative;
+  }
+  .piece-chip.pc-p1 { background: var(--p1bg); border: 1px solid var(--p1border); }
+  .piece-chip.pc-p2 { background: var(--p2bg); border: 1px solid var(--p2border); }
+  .pc-name { font-weight: bold; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pc-p1 .pc-name { color: var(--p1); }
+  .pc-p2 .pc-name { color: var(--p2); }
+  .pc-vals { color: var(--text2); font-family: monospace; font-size: 8px; }
+  .pc-zone-hi { color: var(--gold); font-weight: bold; }
+
+  /* PHASE INDICATOR */
+  .phase-indicator {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .phase-slot {
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    min-height: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: monospace;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
+    gap: 3px;
+  }
+  .phase-slot.ps-done {
+    border-style: solid;
+    border-color: var(--border2);
+    background: var(--bg2);
+    color: var(--text2);
+  }
+  .phase-slot.ps-active {
+    border-style: solid;
+    border-color: var(--gold);
+    background: var(--goldbg);
+    color: var(--text);
+  }
+  .phase-slot.ps-active .ps-label { color: var(--gold); }
+  .ps-label { font-size: 10px; font-weight: bold; letter-spacing: 0.06em; }
+  .ps-piece-name { font-size: 12px; font-weight: bold; }
+  .ps-piece-vals { font-size: 10px; color: var(--text2); }
+
+  /* BASKET */
+  .basket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .basket-label { font-size: 11px; color: var(--text2); font-family: monospace; letter-spacing: 0.08em; }
+  .basket-hint { font-size: 10px; color: var(--text3); font-family: monospace; }
+  .basket-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    margin-bottom: 16px;
+  }
+  .bcard {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 7px 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    user-select: none;
+  }
+  .bcard:hover { border-color: var(--border2); background: var(--bg3); }
+  .bcard:active { transform: scale(0.97); }
+  .bcard.selected { border-color: var(--gold); background: var(--goldbg); }
+  .bcard.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+  .bc-name { font-size: 10px; font-weight: bold; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bc-vals { display: flex; gap: 3px; flex-wrap: wrap; }
+  .bcv { font-size: 9px; font-family: monospace; padding: 1px 3px; border-radius: 3px; background: var(--bg3); color: var(--text2); }
+
+  /* ACTION BUTTON */
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .btn {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 13px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-family: 'Georgia', serif;
+    transition: background 0.15s, opacity 0.15s;
+    letter-spacing: 0.03em;
+  }
+  .btn:hover { background: var(--bg3); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn.btn-insert {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: var(--goldbg);
+    font-weight: bold;
+  }
+  .btn.btn-insert:hover { background: rgba(232,160,32,0.25); }
+  .btn.btn-insert:disabled { opacity: 0.3; cursor: not-allowed; background: var(--goldbg); }
+  .btn.btn-small { flex: none; padding: 10px 14px; font-size: 12px; }
+
+  /* LOG */
+  .log-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; max-height: 120px; overflow-y: auto; }
+  .log-entry { font-size: 11px; font-family: monospace; line-height: 1.8; color: var(--text2); }
+  .log-entry.le-combat { color: var(--text); }
+  .lc-p1 { color: var(--p1); }
+  .lc-p2 { color: var(--p2); }
+  .lc-gold { color: var(--gold); font-weight: bold; }
+  .lc-dim { color: var(--text3); }
+
+  /* WINNER OVERLAY */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  .overlay.show { display: flex; }
+  .win-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 40px 32px;
+    text-align: center;
+    max-width: 320px;
+    width: 90%;
+  }
+  .win-icon { font-size: 40px; margin-bottom: 12px; }
+  .win-title { font-size: 24px; font-weight: normal; margin-bottom: 8px; }
+  .win-score { font-size: 14px; color: var(--text2); font-family: monospace; margin-bottom: 28px; }
+  .win-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Georgia', serif;
+    font-weight: bold;
+    transition: opacity 0.15s;
+  }
+  .win-btn:hover { opacity: 0.85; }
+
+  /* Responsive small screens */
+  @media (max-width: 480px) {
+    .basket-grid { grid-template-columns: repeat(5, 1fr); }
+    .bc-name { font-size: 9px; }
+    .cell { min-height: 78px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <h1>Scacchi dei Pinci</h1>
+    <p>BATTAGLIA LINEARE · 5 CASELLE · 3 ZONE</p>
+  </div>
+
+  <!-- SCOREBOARD -->
+  <div class="scoreboard">
+    <div class="score-card p1" id="sc1">
+      <div class="sc-label">← GIOCATORE 1</div>
+      <div class="sc-pts" id="pts1">0</div>
+      <div class="sc-bar"><div class="sc-fill" id="bar1" style="width:0%"></div></div>
+    </div>
+    <div class="score-mid">
+      <div class="sc-turn-label">TURNO</div>
+      <div class="sc-turn-num" id="tnum">1</div>
+    </div>
+    <div class="score-card p2" id="sc2">
+      <div class="sc-label" style="text-align:right">GIOCATORE 2 →</div>
+      <div class="sc-pts" style="text-align:right" id="pts2">0</div>
+      <div class="sc-bar"><div class="sc-fill" id="bar2" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- TURN BANNER -->
+  <div class="turn-banner" id="tbanner"></div>
+
+  <!-- CAMPO -->
+  <div class="field-section">
+    <div class="zone-row">
+      <div class="zone-lbl">ZONA 1 · caselle 1-2</div>
+      <div class="zone-lbl" style="color:rgba(232,160,32,0.5)">ZONA 2 · 3</div>
+      <div class="zone-lbl">ZONA 3 · caselle 4-5</div>
+    </div>
+    <div class="field-row" id="field"></div>
+  </div>
+
+  <!-- PHASE SLOTS -->
+  <div class="phase-indicator" id="phase-slots"></div>
+
+  <!-- BASKET -->
+  <div class="basket-header">
+    <span class="basket-label">BASKET COMUNE</span>
+    <span class="basket-hint" id="basket-hint"></span>
+  </div>
+  <div class="basket-grid" id="bgrid"></div>
+
+  <!-- ACTIONS -->
+  <div class="action-row">
+    <button class="btn btn-insert" id="btn-ins" onclick="doInsert()" disabled>Inserisci nel campo</button>
+    <button class="btn btn-small" onclick="resetGame()">Nuova partita</button>
+  </div>
+
+  <!-- LOG -->
+  <div class="log-wrap" id="log"></div>
+</div>
+
+<!-- WINNER OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="win-box">
+    <div class="win-icon">🏆</div>
+    <div class="win-title" id="wtitle"></div>
+    <div class="win-score" id="wscore"></div>
+    <button class="win-btn" onclick="resetGame()">Nuova partita</button>
+  </div>
+</div>
+
+<script>
+// ─── DATI ────────────────────────────────────────────────────────────────────
+const ALL_PIECES = [
+  {name:"Guerriero",  z:[3,1,2]},
+  {name:"Arciere",    z:[1,2,3]},
+  {name:"Cavaliere",  z:[2,3,1]},
+  {name:"Mago",       z:[1,3,2]},
+  {name:"Paladin",    z:[3,2,1]},
+  {name:"Ladro",      z:[2,1,3]},
+  {name:"Drago",      z:[3,3,1]},
+  {name:"Golem",      z:[2,2,2]},
+  {name:"Strega",     z:[1,2,2]},
+  {name:"Eroe",       z:[2,3,3]},
+  {name:"Guardiano",  z:[3,1,1]},
+  {name:"Fantasma",   z:[1,1,3]},
+  {name:"Titano",     z:[3,2,3]},
+  {name:"Ninfa",      z:[2,1,2]},
+  {name:"Oracolo",    z:[1,3,1]},
+  {name:"Berserker",  z:[3,3,2]},
+  {name:"Sciamano",   z:[2,2,3]},
+  {name:"Assassino",  z:[1,2,1]},
+  {name:"Colossus",   z:[3,1,3]},
+  {name:"Elementale", z:[2,3,2]},
+];
+
+const WIN_PTS = 30;
+
+// zona (0-indexed) per ogni cella (0-indexed)
+// cella 0,1 → zona 0 ; cella 2 → zona 1 ; cella 3,4 → zona 2
+function zoneOf(c) { return c <= 1 ? 0 : c === 2 ? 1 : 2; }
+
+// ─── STATO ───────────────────────────────────────────────────────────────────
+let uid = 0;
+function makePiece() {
+  const t = ALL_PIECES[Math.floor(Math.random() * ALL_PIECES.length)];
+  return { name: t.name, z: [...t.z], id: uid++ };
+}
+
+let G = {};
+
+function initGame() {
+  G = {
+    pts:       [0, 0],
+    turnNum:   1,
+    // A chi tocca: 0=G1, 1=G2
+    turn:      0,
+    // Quale dei 2 pezzi del turno sta inserendo (0 o 1)
+    pieceStep: 0,
+    // Pipe: 5 celle, ogni cella ha p1 e p2 (il pezzo che occupa quella posizione, o null)
+    pipe:      Array(5).fill(null).map(() => ({ p1: null, p2: null })),
+    // Basket: 10 pezzi
+    basket:    Array(10).fill(null).map(makePiece),
+    // Indice basket selezionato (-1 = nessuno)
+    selected:  -1,
+    // Log stringhe HTML
+    log:       [],
+    over:      false,
+  };
+  renderAll();
+}
+
+// ─── LOGICA DI GIOCO ─────────────────────────────────────────────────────────
+
+/**
+ * Inserisce il pezzo nella pipe.
+ * G1 inserisce sempre da sinistra (cella 0): tutto shift destra.
+ * G2 inserisce sempre da destra (cella 4): tutto shift sinistra.
+ */
+function insertIntoPipe(piece) {
+  const pipe = G.pipe;
+  if (G.turn === 0) {
+    // shift right: cella[4].p1 = cella[3].p1, ..., cella[0].p1 = pezzo
+    for (let i = 4; i > 0; i--) pipe[i].p1 = pipe[i-1].p1;
+    pipe[0].p1 = piece;
+  } else {
+    // shift left: cella[0].p2 = cella[1].p2, ..., cella[4].p2 = pezzo
+    for (let i = 0; i < 4; i++) pipe[i].p2 = pipe[i+1].p2;
+    pipe[4].p2 = piece;
+  }
+}
+
+/**
+ * Controlla tutti i combattimenti: ogni cella dove c'è sia p1 che p2.
+ * Ritorna array di { cell, zone, p1, p2, winner } per animazioni/log.
+ */
+function resolveCombats() {
+  const results = [];
+  for (let c = 0; c < 5; c++) {
+    const slot = G.pipe[c];
+    if (!slot.p1 || !slot.p2) continue;
+    const z = zoneOf(c);
+    const v1 = slot.p1.z[z];
+    const v2 = slot.p2.z[z];
+    let winner = 0; // 0=pareggio, 1=G1, 2=G2
+    if (v1 > v2) { G.pts[0]++; winner = 1; }
+    else if (v2 > v1) { G.pts[1]++; winner = 2; }
+    results.push({ cell: c, zone: z, p1: slot.p1, p2: slot.p2, v1, v2, winner });
+  }
+  return results;
+}
+
+function checkWin() {
+  if (G.pts[0] >= WIN_PTS || G.pts[1] >= WIN_PTS) {
+    G.over = true;
+  }
+}
+
+// ─── INTERAZIONE ─────────────────────────────────────────────────────────────
+
+function selectCard(idx) {
+  if (G.over) return;
+  G.selected = G.selected === idx ? -1 : idx;
+  renderBasket();
+  renderPhaseSlots();
+  document.getElementById('btn-ins').disabled = G.selected < 0;
+}
+
+function doInsert() {
+  if (G.selected < 0 || G.over) return;
+
+  const piece = G.basket[G.selected];
+  const pName = G.turn === 0 ? 'G1' : 'G2';
+  const pStep = G.pieceStep + 1;
+
+  // Log inserimento
+  addLog(`<span class="${G.turn===0?'lc-p1':'lc-p2'}">${pName}</span> inserisce pezzo <b>${pStep}/2</b>: <b>${piece.name}</b> <span class="lc-dim">[Z1:${piece.z[0]} Z2:${piece.z[1]} Z3:${piece.z[2]}]</span>`);
+
+  // Inserisci nella pipe
+  insertIntoPipe(piece);
+
+  // Risolvi combattimenti
+  const fights = resolveCombats();
+  fights.forEach(f => {
+    let msg;
+    if (f.winner === 1) {
+      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} zona ${f.zone+1}: <span class="lc-p1">${f.p1.name}</span> <b>${f.v1}</b> > <span class="lc-p2">${f.p2.name}</span> ${f.v2} → <span class="lc-gold">+1 G1</span>`;
+    } else if (f.winner === 2) {
+      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} zona ${f.zone+1}: <span class="lc-p2">${f.p2.name}</span> <b>${f.v2}</b> > <span class="lc-p1">${f.p1.name}</span> ${f.v1} → <span class="lc-gold">+1 G2</span>`;
+    } else {
+      msg = `<span class="lc-dim">≈</span> Casella ${f.cell+1} zona ${f.zone+1}: ${f.p1.name} ${f.v1} = ${f.p2.name} ${f.v2} — <span class="lc-dim">pareggio</span>`;
+    }
+    addLog(msg, true);
+    flashCell(f.cell);
+  });
+
+  // Rimpiazza il pezzo nel basket
+  G.basket[G.selected] = makePiece();
+  G.selected = -1;
+
+  // Avanza il passo del turno
+  if (G.pieceStep === 0) {
+    G.pieceStep = 1;
+  } else {
+    G.pieceStep = 0;
+    G.turn = 1 - G.turn;
+    if (G.turn === 0) G.turnNum++;
+  }
+
+  checkWin();
+  renderAll();
+
+  if (G.over) {
+    setTimeout(showWinner, 600);
+  }
+}
+
+function showWinner() {
+  const w = G.pts[0] >= WIN_PTS ? 'Giocatore 1' : 'Giocatore 2';
+  const wp = Math.max(G.pts[0], G.pts[1]);
+  const lp = Math.min(G.pts[0], G.pts[1]);
+  document.getElementById('wtitle').textContent = w + ' vince!';
+  document.getElementById('wscore').textContent = `Punteggio finale: ${wp} – ${lp}`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function resetGame() {
+  document.getElementById('overlay').classList.remove('show');
+  initGame();
+}
+
+function flashCell(idx) {
+  const cells = document.querySelectorAll('.cell');
+  if (!cells[idx]) return;
+  cells[idx].classList.add('combat-flash');
+  setTimeout(() => cells[idx].classList.remove('combat-flash'), 700);
+}
+
+function addLog(html, isCombat) {
+  G.log.push({ html, isCombat: !!isCombat });
+  if (G.log.length > 60) G.log.shift();
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+
+function renderAll() {
+  renderScore();
+  renderBanner();
+  renderField();
+  renderPhaseSlots();
+  renderBasket();
+  renderLog();
+}
+
+function renderScore() {
+  document.getElementById('pts1').textContent = G.pts[0];
+  document.getElementById('pts2').textContent = G.pts[1];
+  document.getElementById('bar1').style.width = Math.min(100, G.pts[0]/WIN_PTS*100) + '%';
+  document.getElementById('bar2').style.width = Math.min(100, G.pts[1]/WIN_PTS*100) + '%';
+  document.getElementById('tnum').textContent = G.turnNum;
+  document.getElementById('sc1').classList.toggle('active', G.turn===0 && !G.over);
+  document.getElementById('sc2').classList.toggle('active', G.turn===1 && !G.over);
+}
+
+function renderBanner() {
+  if (G.over) {
+    document.getElementById('tbanner').innerHTML = '<span class="lc-gold">Partita conclusa!</span>';
+    return;
+  }
+  const pn = G.turn === 0
+    ? '<span class="hl-p1">Giocatore 1</span>'
+    : '<span class="hl-p2">Giocatore 2</span>';
+  const dir = G.turn === 0 ? 'entra da casella 1 →' : '← entra da casella 5';
+  const step = G.pieceStep + 1;
+  document.getElementById('tbanner').innerHTML =
+    `${pn} — inserisci pezzo <b>${step} di 2</b> &nbsp;·&nbsp; <span style="color:var(--text3)">${dir}</span>`;
+}
+
+function renderField() {
+  const el = document.getElementById('field');
+  el.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const z = zoneOf(i);
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (i===2?' zone-center':'');
+
+    const num = document.createElement('div');
+    num.className = 'cell-num';
+    num.textContent = i + 1;
+    cell.appendChild(num);
+
+    const slot = G.pipe[i];
+
+    if (slot.p1) {
+      const d = document.createElement('div');
+      d.className = 'piece-chip pc-p1';
+      // Evidenzia il valore della zona attuale
+      const vals = slot.p1.z.map((v, zi) =>
+        zi === z ? `<span class="pc-zone-hi">${v}</span>` : v
+      ).join('·');
+      d.innerHTML = `<div class="pc-name">${slot.p1.name}</div><div class="pc-vals">${vals}</div>`;
+      cell.appendChild(d);
+    }
+    if (slot.p2) {
+      const d = document.createElement('div');
+      d.className = 'piece-chip pc-p2';
+      const vals = slot.p2.z.map((v, zi) =>
+        zi === z ? `<span class="pc-zone-hi">${v}</span>` : v
+      ).join('·');
+      d.innerHTML = `<div class="pc-name">${slot.p2.name}</div><div class="pc-vals">${vals}</div>`;
+      cell.appendChild(d);
+    }
+
+    el.appendChild(cell);
+  }
+}
+
+function renderPhaseSlots() {
+  const el = document.getElementById('phase-slots');
+  el.innerHTML = '';
+  for (let s = 0; s < 2; s++) {
+    const div = document.createElement('div');
+    if (s < G.pieceStep) {
+      div.className = 'phase-slot ps-done';
+      div.innerHTML = `<span class="ps-label">PEZZO ${s+1}</span><span>✓ Inserito</span>`;
+    } else if (s === G.pieceStep) {
+      div.className = 'phase-slot ps-active';
+      if (G.selected >= 0) {
+        const p = G.basket[G.selected];
+        div.innerHTML = `<span class="ps-label">PEZZO ${s+1} — SELEZIONATO</span><span class="ps-piece-name">${p.name}</span><span class="ps-piece-vals">Z1:${p.z[0]} Z2:${p.z[1]} Z3:${p.z[2]}</span>`;
+      } else {
+        div.innerHTML = `<span class="ps-label">PEZZO ${s+1}</span><span>← scegli dal basket</span>`;
+      }
+    } else {
+      div.className = 'phase-slot';
+      div.innerHTML = `<span class="ps-label">PEZZO ${s+1}</span>`;
+    }
+    el.appendChild(div);
+  }
+}
+
+function renderBasket() {
+  const el = document.getElementById('bgrid');
+  el.innerHTML = '';
+  G.basket.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'bcard' + (i === G.selected ? ' selected' : '') + (G.over ? ' disabled' : '');
+    d.innerHTML = `<div class="bc-name">${p.name}</div><div class="bc-vals"><span class="bcv">Z1:${p.z[0]}</span><span class="bcv">Z2:${p.z[1]}</span><span class="bcv">Z3:${p.z[2]}</span></div>`;
+    d.onclick = () => selectCard(i);
+    el.appendChild(d);
+  });
+  document.getElementById('basket-hint').textContent = G.over ? '' : 'Clicca per selezionare';
+  document.getElementById('btn-ins').disabled = G.selected < 0 || G.over;
+}
+
+function renderLog() {
+  const el = document.getElementById('log');
+  el.innerHTML = G.log.slice(-30).map(l =>
+    `<div class="log-entry${l.isCombat?' le-combat':''}">${l.html}</div>`
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ─── START ────────────────────────────────────────────────────────────────────
+initGame();
+</script>
+</body>
+</html>
