@@ -127,54 +127,25 @@
     gap: 4px;
   }
   .cell {
+    background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
+    min-height: 90px;
     display: flex;
     flex-direction: column;
+    padding: 5px 4px;
+    gap: 4px;
     position: relative;
-    overflow: hidden;
     transition: box-shadow 0.15s, border-color 0.15s;
   }
-  /* Castello: blu acciaio */
-  .cell.zone-castello { background: rgba(50, 90, 140, 0.18); border-color: rgba(74, 140, 220, 0.35); }
-  /* Sala del Re: oro ambra */
-  .cell.zone-re { background: rgba(180, 130, 20, 0.18); border-color: rgba(232, 160, 32, 0.5); }
-  /* Villaggio: verde muschio */
-  .cell.zone-villaggio { background: rgba(50, 110, 60, 0.18); border-color: rgba(80, 160, 80, 0.35); }
+  .cell.zone-center { border-color: rgba(232,160,32,0.2); background: rgba(232,160,32,0.04); }
   .cell.combat-flash { box-shadow: 0 0 0 2px var(--gold); border-color: var(--gold); }
-
   .cell-num {
-    font-size: 9px; color: var(--text3); font-family: monospace;
-    text-align: center; padding: 3px 0 2px; flex-shrink: 0;
-  }
-
-  /* Two fixed lanes inside each cell */
-  .cell-lanes {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    border-top: 0.5px solid rgba(255,255,255,0.06);
-  }
-  .lane {
-    flex: 1;
-    min-height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 3px;
-  }
-  .lane-p1 {
-    border-bottom: 0.5px solid rgba(255,255,255,0.08);
-    background: rgba(74,158,255,0.04);
-  }
-  .lane-p2 {
-    background: rgba(255,107,71,0.04);
-  }
-  .lane-empty {
-    opacity: 0.25;
-    font-size: 8px;
-    font-family: monospace;
+    font-size: 9px;
     color: var(--text3);
+    font-family: monospace;
+    text-align: center;
+    margin-bottom: 2px;
   }
   .piece-chip {
     border-radius: 5px;
@@ -183,20 +154,19 @@
     line-height: 1.4;
     position: relative;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
   }
   .piece-chip.pc-p1 { background: var(--p1bg); border: 1px solid var(--p1border); }
   .piece-chip.pc-p2 { background: var(--p2bg); border: 1px solid var(--p2border); }
-  .pc-img { width: 100%; aspect-ratio: 3/4; flex-shrink: 0; border-radius: 3px; overflow: hidden; background: #0f0e0d; }
+  .pc-img { width: 32px; height: 42px; flex-shrink: 0; border-radius: 3px; overflow: hidden; background: #0f0e0d; }
   .pc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .pc-info { width: 100%; }
-  .pc-name { font-weight: bold; font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+  .pc-info { flex: 1; min-width: 0; }
+  .pc-name { font-weight: bold; font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pc-p1 .pc-name { color: var(--p1); }
   .pc-p2 .pc-name { color: var(--p2); }
-  .pc-vals { color: var(--text2); font-family: monospace; font-size: 9px; font-weight: bold; text-align: center; margin-top: 2px; }
-  .pc-zone-hi { color: var(--gold); font-weight: bold; font-size: 11px; }
+  .pc-vals { color: var(--text2); font-family: monospace; font-size: 7px; }
+  .pc-zone-hi { color: var(--gold); font-weight: bold; }
 
   /* BASKET card with illustration */
   .bc-img { width: 100%; aspect-ratio: 3/4; display: block; overflow: hidden; border-radius: 4px 4px 0 0; background: #0f0e0d; }
@@ -271,9 +241,9 @@
   .bcard:active { transform: scale(0.97); }
   .bcard.selected { border-color: var(--gold); background: var(--goldbg); }
   .bcard.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
-  .bc-name { font-size: 10px; font-weight: bold; color: var(--text); margin-bottom: 4px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
-  .bc-vals { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
-  .bcv { font-size: 11px; font-family: monospace; padding: 2px 5px; border-radius: 3px; background: var(--bg3); color: var(--text); font-weight: bold; }
+  .bc-name { font-size: 10px; font-weight: bold; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bc-vals { display: flex; gap: 3px; flex-wrap: wrap; }
+  .bcv { font-size: 9px; font-family: monospace; padding: 1px 3px; border-radius: 3px; background: var(--bg3); color: var(--text2); }
 
   /* ACTION BUTTON */
   .action-row {
@@ -395,17 +365,6 @@
   .rb-e { background:rgba(160,90,220,0.15); color:#c070ff; }
   .rb-l { background:rgba(232,160,32,0.2); color:#e8a020; }
 
-  /* Tier background for basket cards */
-  .bcard.tier-c { border-color: rgba(138,135,128,0.4); }
-  .bcard.tier-c .bc-name { color: #c2bfb8; }
-  .bcard.tier-r { border-color: rgba(74,158,255,0.5); background: linear-gradient(180deg, rgba(74,158,255,0.08) 0%, var(--bg2) 60%); }
-  .bcard.tier-r .bc-name { color: #4a9eff; }
-  .bcard.tier-e { border-color: rgba(160,90,220,0.5); background: linear-gradient(180deg, rgba(160,90,220,0.12) 0%, var(--bg2) 60%); }
-  .bcard.tier-e .bc-name { color: #c070ff; }
-  .bcard.tier-l { border-color: rgba(232,160,32,0.6); background: linear-gradient(180deg, rgba(232,160,32,0.15) 0%, var(--bg2) 60%); }
-  .bcard.tier-l .bc-name { color: #e8a020; }
-  .bcard.tier-l.selected, .bcard.tier-e.selected, .bcard.tier-r.selected, .bcard.tier-c.selected { border-width: 2px; }
-
   .settings-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
   .btn-cancel { padding:9px 18px; background:transparent; border:1px solid var(--border2); border-radius:var(--radius); color:var(--text2); font-size:13px; cursor:pointer; font-family:'Georgia',serif; transition:background 0.15s; }
   .btn-cancel:hover { background:var(--bg3); }
@@ -456,9 +415,9 @@
   <!-- CAMPO -->
   <div class="field-section">
     <div class="zone-row">
-      <div class="zone-lbl" style="color:rgba(74,140,220,0.8)">CASTELLO · caselle 1-2</div>
-      <div class="zone-lbl" style="color:rgba(232,160,32,0.9)">SALA DEL RE · 3</div>
-      <div class="zone-lbl" style="color:rgba(80,160,80,0.8)">VILLAGGIO · caselle 4-5</div>
+      <div class="zone-lbl">CASTELLO · caselle 1-2</div>
+      <div class="zone-lbl" style="color:rgba(232,160,32,0.5)">SALA DEL RE · 3</div>
+      <div class="zone-lbl">VILLAGGIO · caselle 4-5</div>
     </div>
     <div class="field-row" id="field"></div>
   </div>
@@ -898,24 +857,15 @@ function renderField() {
   for (let i = 0; i < 5; i++) {
     const z = zoneOf(i);
     const cell = document.createElement('div');
-    const zoneClass = ['zone-castello','zone-castello','zone-re','zone-villaggio','zone-villaggio'][i];
-    cell.className = 'cell ' + zoneClass;
+    cell.className = 'cell' + (i===2?' zone-center':'');
 
-    // Cell number
     const num = document.createElement('div');
     num.className = 'cell-num';
     num.textContent = i + 1;
     cell.appendChild(num);
 
-    // Two lanes container
-    const lanes = document.createElement('div');
-    lanes.className = 'cell-lanes';
-
     const slot = G.pipe[i];
 
-    // Lane G1 (top)
-    const laneP1 = document.createElement('div');
-    laneP1.className = 'lane lane-p1';
     if (slot.p1) {
       const d = document.createElement('div');
       d.className = 'piece-chip pc-p1';
@@ -923,15 +873,8 @@ function renderField() {
         zi === z ? `<span class="pc-zone-hi">${v}</span>` : v
       ).join('·');
       d.innerHTML = `<div class="pc-img"><img src="${getPieceImg(slot.p1.name)}" alt="${slot.p1.name}" onerror="this.style.display='none'"></div><div class="pc-info"><div class="pc-name">${slot.p1.name}</div><div class="pc-vals">${vals}</div></div>`;
-      laneP1.appendChild(d);
-    } else {
-      laneP1.innerHTML = '<span class="lane-empty">G1 →</span>';
+      cell.appendChild(d);
     }
-    lanes.appendChild(laneP1);
-
-    // Lane G2 (bottom)
-    const laneP2 = document.createElement('div');
-    laneP2.className = 'lane lane-p2';
     if (slot.p2) {
       const d = document.createElement('div');
       d.className = 'piece-chip pc-p2';
@@ -939,13 +882,9 @@ function renderField() {
         zi === z ? `<span class="pc-zone-hi">${v}</span>` : v
       ).join('·');
       d.innerHTML = `<div class="pc-img"><img src="${getPieceImg(slot.p2.name)}" alt="${slot.p2.name}" onerror="this.style.display='none'"></div><div class="pc-info"><div class="pc-name">${slot.p2.name}</div><div class="pc-vals">${vals}</div></div>`;
-      laneP2.appendChild(d);
-    } else {
-      laneP2.innerHTML = '<span class="lane-empty">← G2</span>';
+      cell.appendChild(d);
     }
-    lanes.appendChild(laneP2);
 
-    cell.appendChild(lanes);
     el.appendChild(cell);
   }
 }
@@ -979,18 +918,14 @@ function renderBasket() {
   el.innerHTML = '';
   G.basket.forEach((p, i) => {
     const d = document.createElement('div');
-    d.className = 'bcard tier-' + p.tier + (i === G.selected ? ' selected' : '') + (G.over ? ' disabled' : '');
+    d.className = 'bcard' + (i === G.selected ? ' selected' : '') + (G.over ? ' disabled' : '');
     const tierCls = { l:'rb-l', e:'rb-e', r:'rb-r', c:'rb-c' }[p.tier];
-    const tierLbl = { l:'Leggendario', e:'Epico', r:'Raro', c:'Comune' }[p.tier];
+    const tierLbl = { l:'Leg', e:'Epi', r:'Rar', c:'Com' }[p.tier];
     d.innerHTML = `
       <div class="bc-img"><img src="${getPieceImg(p.name)}" alt="${p.name}" onerror="this.style.display='none'"></div>
       <div class="bc-name">${p.name}</div>
-      <div class="bc-vals">
-        <span class="bcv" title="Castello">C:${p.z[0]}</span>
-        <span class="bcv" title="Re">R:${p.z[1]}</span>
-        <span class="bcv" title="Villaggio">V:${p.z[2]}</span>
-      </div>
-      <div style="margin-top:4px"><span class="rb ${tierCls}">${tierLbl}</span></div>`;
+      <div class="bc-vals"><span class="bcv">C:${p.z[0]}</span><span class="bcv">R:${p.z[1]}</span><span class="bcv">V:${p.z[2]}</span></div>
+      <div style="margin-top:3px"><span class="rb ${tierCls}">${tierLbl}</span></div>`;
     d.onclick = () => selectCard(i);
     el.appendChild(d);
   });
