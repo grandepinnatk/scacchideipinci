@@ -319,12 +319,64 @@
     .bc-name { font-size: 9px; }
     .cell { min-height: 78px; }
   }
+
+  .header-row { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:4px; position:relative; }
+  .btn-settings { position:absolute; right:0; background:transparent; border:1px solid var(--border2); border-radius:var(--radius); color:var(--text2); font-size:16px; width:36px; height:36px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s,color 0.15s; flex:none; }
+  .btn-settings:hover { background:var(--bg3); color:var(--text); }
+
+  .settings-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); align-items:center; justify-content:center; z-index:998; }
+  .settings-overlay.show { display:flex; }
+  .settings-box { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:28px 24px; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; }
+  .settings-title { font-size:18px; font-weight:normal; letter-spacing:0.04em; margin-bottom:4px; }
+  .settings-subtitle { font-size:12px; color:var(--text3); font-family:monospace; margin-bottom:22px; }
+  .settings-section { font-size:11px; color:var(--text2); font-family:monospace; letter-spacing:0.08em; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+
+  .rarity-tiers { display:flex; flex-direction:column; gap:10px; margin-bottom:22px; }
+  .rarity-row { display:grid; grid-template-columns:1fr 130px 32px; align-items:center; gap:10px; }
+  .rarity-label { font-size:13px; }
+  .rarity-label small { font-size:10px; color:var(--text3); font-family:monospace; display:block; }
+  .rarity-slider { width:100%; accent-color:var(--gold); }
+  .rarity-val { font-size:13px; font-family:monospace; color:var(--gold); text-align:right; }
+
+  .setting-row { display:grid; grid-template-columns:1fr 130px 32px; align-items:center; gap:10px; margin-bottom:22px; }
+  .setting-label { font-size:13px; }
+  .setting-label small { font-size:10px; color:var(--text3); font-family:monospace; display:block; }
+
+  .piece-table-wrap { border:1px solid var(--border); border-radius:var(--radius); max-height:200px; overflow-y:auto; margin-bottom:20px; }
+  .piece-table { width:100%; border-collapse:collapse; font-size:11px; font-family:monospace; }
+  .piece-table th { background:var(--bg3); color:var(--text2); padding:6px 8px; text-align:left; font-weight:normal; letter-spacing:0.05em; position:sticky; top:0; z-index:1; }
+  .piece-table td { padding:5px 8px; border-top:1px solid var(--border); }
+  .piece-table tr:hover td { background:var(--bg3); }
+  .td-val { color:var(--gold); font-weight:bold; }
+  .rb { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; }
+  .rb-c { background:rgba(138,135,128,0.2); color:#8a8780; }
+  .rb-r { background:rgba(74,158,255,0.15); color:#4a9eff; }
+  .rb-e { background:rgba(160,90,220,0.15); color:#c070ff; }
+  .rb-l { background:rgba(232,160,32,0.2); color:#e8a020; }
+
+  .settings-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+  .btn-cancel { padding:9px 18px; background:transparent; border:1px solid var(--border2); border-radius:var(--radius); color:var(--text2); font-size:13px; cursor:pointer; font-family:'Georgia',serif; transition:background 0.15s; }
+  .btn-cancel:hover { background:var(--bg3); }
+  .btn-apply { padding:9px 18px; background:var(--gold); border:none; border-radius:var(--radius); color:var(--bg); font-size:13px; font-weight:bold; cursor:pointer; font-family:'Georgia',serif; transition:opacity 0.15s; }
+  .btn-apply:hover { opacity:0.85; }
+
+  .tab-btn { padding:7px 16px; background:transparent; border:1px solid var(--border); border-radius:var(--radius); color:var(--text2); font-size:12px; cursor:pointer; font-family:'Georgia',serif; transition:background 0.15s,color 0.15s,border-color 0.15s; }
+  .tab-btn:hover { background:var(--bg3); color:var(--text); }
+  .tab-btn.active { border-color:var(--gold); color:var(--gold); background:var(--goldbg); }
+
+  .piece-edit-input { width:44px; padding:3px 4px; background:var(--bg3); border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:11px; font-family:monospace; text-align:center; transition:border-color 0.15s; }
+  .piece-edit-input:focus { outline:none; border-color:var(--gold); }
+  .piece-edit-input.changed { border-color:rgba(232,160,32,0.5); background:rgba(232,160,32,0.07); }
+  .piece-table td { padding:4px 6px; border-top:1px solid var(--border); vertical-align:middle; }
 </style>
 </head>
 <body>
 <div id="app">
   <div class="header">
-    <h1>Scacchi dei Pinci</h1>
+    <div class="header-row">
+      <h1>Scacchi dei Pinci</h1>
+      <button class="btn-settings" onclick="openSettings()" title="Impostazioni">⚙</button>
+    </div>
     <p>BATTAGLIA LINEARE · 5 CASELLE · 3 ZONE</p>
   </div>
 
@@ -352,9 +404,9 @@
   <!-- CAMPO -->
   <div class="field-section">
     <div class="zone-row">
-      <div class="zone-lbl">ZONA 1 · caselle 1-2</div>
-      <div class="zone-lbl" style="color:rgba(232,160,32,0.5)">ZONA 2 · 3</div>
-      <div class="zone-lbl">ZONA 3 · caselle 4-5</div>
+      <div class="zone-lbl">CASTELLO · caselle 1-2</div>
+      <div class="zone-lbl" style="color:rgba(232,160,32,0.5)">SALA DEL RE · 3</div>
+      <div class="zone-lbl">VILLAGGIO · caselle 4-5</div>
     </div>
     <div class="field-row" id="field"></div>
   </div>
@@ -379,6 +431,71 @@
   <div class="log-wrap" id="log"></div>
 </div>
 
+<!-- SETTINGS OVERLAY -->
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-box">
+    <div class="settings-title">Impostazioni</div>
+    <div class="settings-subtitle">MODIFICA RARITÀ, REGOLE E PEZZI · le modifiche si applicano alla prossima partita</div>
+
+    <!-- TAB NAV -->
+    <div style="display:flex;gap:6px;margin-bottom:20px;">
+      <button class="tab-btn active" id="tab-rarity" onclick="switchTab('rarity')">Rarità</button>
+      <button class="tab-btn" id="tab-pieces" onclick="switchTab('pieces')">Pezzi</button>
+      <button class="tab-btn" id="tab-rules" onclick="switchTab('rules')">Regole</button>
+    </div>
+
+    <!-- TAB: RARITÀ -->
+    <div id="panel-rarity">
+      <div class="settings-section">RARITÀ DEI PEZZI</div>
+      <div style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:14px;">
+        I pesi determinano la probabilità di apparire nel basket. Peso 0 = mai estratto.
+      </div>
+      <div class="rarity-tiers" id="rarity-tiers"></div>
+    </div>
+
+    <!-- TAB: PEZZI -->
+    <div id="panel-pieces" style="display:none">
+      <div class="settings-section">MODIFICA VALORI DEI PEZZI</div>
+      <div style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:12px;">
+        Modifica i valori di zona (0–4) e il valore totale per ogni pezzo. Il valore totale determina la rarità.
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+        <input type="text" id="piece-search" placeholder="Cerca pezzo..." oninput="filterPieceTable()"
+          style="flex:1;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-size:12px;font-family:monospace;">
+        <button class="btn-cancel" style="padding:6px 12px;font-size:11px;" onclick="resetPieceValues()">Ripristina default</button>
+      </div>
+      <div class="piece-table-wrap" style="max-height:320px;">
+        <table class="piece-table">
+          <thead><tr>
+            <th style="min-width:130px">Nome</th>
+            <th title="Castello">Cast.</th>
+            <th title="Sala del Re">Re</th>
+            <th title="Villaggio">Vill.</th>
+            <th title="Valore totale (determina rarità)">Val.</th>
+            <th>Rarità</th>
+          </tr></thead>
+          <tbody id="piece-edit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: REGOLE -->
+    <div id="panel-rules" style="display:none">
+      <div class="settings-section">PUNTEGGIO VITTORIA</div>
+      <div class="setting-row">
+        <div class="setting-label">Punti per vincere<small>Default: 30</small></div>
+        <input type="range" class="rarity-slider" id="win-slider" min="10" max="100" step="5" value="30" oninput="document.getElementById('win-val').textContent=this.value">
+        <div class="rarity-val" id="win-val">30</div>
+      </div>
+    </div>
+
+    <div class="settings-footer">
+      <button class="btn-cancel" onclick="closeSettings()">Annulla</button>
+      <button class="btn-apply" onclick="applySettings()">Applica e ricomincia</button>
+    </div>
+  </div>
+</div>
+
 <!-- WINNER OVERLAY -->
 <div class="overlay" id="overlay">
   <div class="win-box">
@@ -391,41 +508,103 @@
 
 <script>
 // ─── DATI ────────────────────────────────────────────────────────────────────
+const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
+
 const ALL_PIECES = [
-  {name:"Guerriero",  z:[3,1,2]},
-  {name:"Arciere",    z:[1,2,3]},
-  {name:"Cavaliere",  z:[2,3,1]},
-  {name:"Mago",       z:[1,3,2]},
-  {name:"Paladin",    z:[3,2,1]},
-  {name:"Ladro",      z:[2,1,3]},
-  {name:"Drago",      z:[3,3,1]},
-  {name:"Golem",      z:[2,2,2]},
-  {name:"Strega",     z:[1,2,2]},
-  {name:"Eroe",       z:[2,3,3]},
-  {name:"Guardiano",  z:[3,1,1]},
-  {name:"Fantasma",   z:[1,1,3]},
-  {name:"Titano",     z:[3,2,3]},
-  {name:"Ninfa",      z:[2,1,2]},
-  {name:"Oracolo",    z:[1,3,1]},
-  {name:"Berserker",  z:[3,3,2]},
-  {name:"Sciamano",   z:[2,2,3]},
-  {name:"Assassino",  z:[1,2,1]},
-  {name:"Colossus",   z:[3,1,3]},
-  {name:"Elementale", z:[2,3,2]},
+  {name:"Spalacacca",         z:[1,1,2], val:20},
+  {name:"Sentinella Sicula",  z:[3,2,1], val:15},
+  {name:"U Porco",            z:[2,0,2], val:15},
+  {name:"Jullare",            z:[3,3,1], val:15},
+  {name:"L'impiccato",        z:[2,1,2], val:15},
+  {name:"Scavafossati",       z:[1,1,2], val:20},
+  {name:"Genuflesso",         z:[1,3,1], val:15},
+  {name:"Imboscato",          z:[2,2,2], val:12},
+  {name:"Srotolatappeti",     z:[2,2,1], val:12},
+  {name:"Il letterato",       z:[1,1,2], val:10},
+  {name:"Accenditorce",       z:[2,2,1], val:12},
+  {name:"Mangiapane",         z:[1,1,2], val:10},
+  {name:"Catapulta Umana",    z:[2,1,2], val:8},
+  {name:"Lebbroso",           z:[0,0,3], val:8},
+  {name:"Calpestato",         z:[2,1,1], val:10},
+  {name:"Raccoglifrecce",     z:[2,2,1], val:15},
+  {name:"Gattara",            z:[1,1,2], val:10},
+  {name:"Esattore",           z:[2,3,1], val:7},
+  {name:"Reggitrono",         z:[2,4,0], val:4},
+  {name:"Sventolatore",       z:[3,2,1], val:7},
+  {name:"Ratto di Fogna",     z:[1,1,2], val:15},
+  {name:"Spaventapasseri",    z:[1,1,2], val:10},
+  {name:"Bevipozioni",        z:[2,1,1], val:10},
+  {name:"Portaspade",         z:[2,2,1], val:10},
+  {name:"Suonacampane",       z:[1,1,2], val:8},
+  {name:"Alzaponte",          z:[1,1,2], val:8},
+  {name:"Fagiano di corte",   z:[1,3,0], val:8},
+  {name:"Vendistracci",       z:[1,0,3], val:15},
+  {name:"Guaritore Cieco",    z:[3,3,3], val:5},
+  {name:"Boia Tagliateste",   z:[2,2,2], val:8},
+  {name:"Cellaio",            z:[2,1,1], val:8},
+  {name:"Arciere gobbo",      z:[3,1,1], val:15},
+  {name:"Spadaccino monco",   z:[3,1,1], val:15},
+  {name:"Frate Ubriaco",      z:[2,2,2], val:8},
+  {name:"Monaco Obeso",       z:[2,3,1], val:7},
+  {name:"Apparecchiatavoli",  z:[2,2,0], val:10},
 ];
 
-const WIN_PTS = 30;
+// ─── RARITÀ ──────────────────────────────────────────────────────────────────
+// Fasce di valore → tier
+// val >= 20: Leggendario, val >= 15: Epico, val >= 10: Raro, val < 10: Comune
+const TIERS = [
+  { id:'l', label:'Leggendario', range:'val ≥ 20', cls:'rb-l', defaultWeight: 1 },
+  { id:'e', label:'Epico',       range:'val 15–19', cls:'rb-e', defaultWeight: 3 },
+  { id:'r', label:'Raro',        range:'val 10–14', cls:'rb-r', defaultWeight: 6 },
+  { id:'c', label:'Comune',      range:'val < 10',  cls:'rb-c', defaultWeight:12 },
+];
 
-// zona (0-indexed) per ogni cella (0-indexed)
-// cella 0,1 → zona 0 ; cella 2 → zona 1 ; cella 3,4 → zona 2
-function zoneOf(c) { return c <= 1 ? 0 : c === 2 ? 1 : 2; }
+function tierOf(val) {
+  if (val >= 20) return 'l';
+  if (val >= 15) return 'e';
+  if (val >= 10) return 'r';
+  return 'c';
+}
 
-// ─── STATO ───────────────────────────────────────────────────────────────────
+// Impostazioni correnti (modificabili dal menu)
+let SETTINGS = {
+  weights: { l:1, e:3, r:6, c:12 },
+  winPts: 30,
+};
+
+// Sovrascritture valori pezzi (dichiarate qui, usate da buildPool)
+let PIECE_OVERRIDES = {};
+
+function getEffectivePiece(p) {
+  const ov = PIECE_OVERRIDES[p.name];
+  if (ov) return { name: p.name, z: [...ov.z], val: ov.val };
+  return { name: p.name, z: [...p.z], val: p.val };
+}
+
+function getEffectivePieces() {
+  return ALL_PIECES.map(getEffectivePiece);
+}
+
+// Costruisce la pool pesata
+function buildPool() {
+  const pool = [];
+  getEffectivePieces().forEach(p => {
+    const t = tierOf(p.val);
+    const w = SETTINGS.weights[t];
+    for (let i = 0; i < w; i++) pool.push(p);
+  });
+  return pool;
+}
+
+let POOL = buildPool();
+
 let uid = 0;
 function makePiece() {
-  const t = ALL_PIECES[Math.floor(Math.random() * ALL_PIECES.length)];
-  return { name: t.name, z: [...t.z], id: uid++ };
+  const t = POOL[Math.floor(Math.random() * POOL.length)];
+  return { name: t.name, z: [...t.z], val: t.val, tier: tierOf(t.val), id: uid++ };
 }
+// cella 0,1 → zona 0 ; cella 2 → zona 1 ; cella 3,4 → zona 2
+function zoneOf(c) { return c <= 1 ? 0 : c === 2 ? 1 : 2; }
 
 let G = {};
 
@@ -491,7 +670,7 @@ function resolveCombats() {
 }
 
 function checkWin() {
-  if (G.pts[0] >= WIN_PTS || G.pts[1] >= WIN_PTS) {
+  if (G.pts[0] >= SETTINGS.winPts || G.pts[1] >= SETTINGS.winPts) {
     G.over = true;
   }
 }
@@ -514,7 +693,7 @@ function doInsert() {
   const pStep = G.pieceStep + 1;
 
   // Log inserimento
-  addLog(`<span class="${G.turn===0?'lc-p1':'lc-p2'}">${pName}</span> inserisce pezzo <b>${pStep}/2</b>: <b>${piece.name}</b> <span class="lc-dim">[Z1:${piece.z[0]} Z2:${piece.z[1]} Z3:${piece.z[2]}]</span>`);
+  addLog(`<span class="${G.turn===0?'lc-p1':'lc-p2'}">${pName}</span> inserisce pezzo <b>${pStep}/2</b>: <b>${piece.name}</b> <span class="lc-dim">[C:${piece.z[0]} R:${piece.z[1]} V:${piece.z[2]}]</span>`);
 
   // Inserisci nella pipe
   insertIntoPipe(piece);
@@ -522,13 +701,14 @@ function doInsert() {
   // Risolvi combattimenti
   const fights = resolveCombats();
   fights.forEach(f => {
+    const zoneName = ZONE_NAMES[f.zone];
     let msg;
     if (f.winner === 1) {
-      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} zona ${f.zone+1}: <span class="lc-p1">${f.p1.name}</span> <b>${f.v1}</b> > <span class="lc-p2">${f.p2.name}</span> ${f.v2} → <span class="lc-gold">+1 G1</span>`;
+      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} <i>${zoneName}</i>: <span class="lc-p1">${f.p1.name}</span> <b>${f.v1}</b> > <span class="lc-p2">${f.p2.name}</span> ${f.v2} → <span class="lc-gold">+1 G1</span>`;
     } else if (f.winner === 2) {
-      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} zona ${f.zone+1}: <span class="lc-p2">${f.p2.name}</span> <b>${f.v2}</b> > <span class="lc-p1">${f.p1.name}</span> ${f.v1} → <span class="lc-gold">+1 G2</span>`;
+      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} <i>${zoneName}</i>: <span class="lc-p2">${f.p2.name}</span> <b>${f.v2}</b> > <span class="lc-p1">${f.p1.name}</span> ${f.v1} → <span class="lc-gold">+1 G2</span>`;
     } else {
-      msg = `<span class="lc-dim">≈</span> Casella ${f.cell+1} zona ${f.zone+1}: ${f.p1.name} ${f.v1} = ${f.p2.name} ${f.v2} — <span class="lc-dim">pareggio</span>`;
+      msg = `<span class="lc-dim">≈</span> Casella ${f.cell+1} <i>${zoneName}</i>: ${f.p1.name} ${f.v1} = ${f.p2.name} ${f.v2} — <span class="lc-dim">pareggio</span>`;
     }
     addLog(msg, true);
     flashCell(f.cell);
@@ -556,7 +736,7 @@ function doInsert() {
 }
 
 function showWinner() {
-  const w = G.pts[0] >= WIN_PTS ? 'Giocatore 1' : 'Giocatore 2';
+  const w = G.pts[0] >= SETTINGS.winPts ? 'Giocatore 1' : 'Giocatore 2';
   const wp = Math.max(G.pts[0], G.pts[1]);
   const lp = Math.min(G.pts[0], G.pts[1]);
   document.getElementById('wtitle').textContent = w + ' vince!';
@@ -595,8 +775,8 @@ function renderAll() {
 function renderScore() {
   document.getElementById('pts1').textContent = G.pts[0];
   document.getElementById('pts2').textContent = G.pts[1];
-  document.getElementById('bar1').style.width = Math.min(100, G.pts[0]/WIN_PTS*100) + '%';
-  document.getElementById('bar2').style.width = Math.min(100, G.pts[1]/WIN_PTS*100) + '%';
+  document.getElementById('bar1').style.width = Math.min(100, G.pts[0]/SETTINGS.winPts*100) + '%';
+  document.getElementById('bar2').style.width = Math.min(100, G.pts[1]/SETTINGS.winPts*100) + '%';
   document.getElementById('tnum').textContent = G.turnNum;
   document.getElementById('sc1').classList.toggle('active', G.turn===0 && !G.over);
   document.getElementById('sc2').classList.toggle('active', G.turn===1 && !G.over);
@@ -667,7 +847,7 @@ function renderPhaseSlots() {
       div.className = 'phase-slot ps-active';
       if (G.selected >= 0) {
         const p = G.basket[G.selected];
-        div.innerHTML = `<span class="ps-label">PEZZO ${s+1} — SELEZIONATO</span><span class="ps-piece-name">${p.name}</span><span class="ps-piece-vals">Z1:${p.z[0]} Z2:${p.z[1]} Z3:${p.z[2]}</span>`;
+        div.innerHTML = `<span class="ps-label">PEZZO ${s+1} — SELEZIONATO</span><span class="ps-piece-name">${p.name}</span><span class="ps-piece-vals">C:${p.z[0]} R:${p.z[1]} V:${p.z[2]}</span>`;
       } else {
         div.innerHTML = `<span class="ps-label">PEZZO ${s+1}</span><span>← scegli dal basket</span>`;
       }
@@ -685,12 +865,147 @@ function renderBasket() {
   G.basket.forEach((p, i) => {
     const d = document.createElement('div');
     d.className = 'bcard' + (i === G.selected ? ' selected' : '') + (G.over ? ' disabled' : '');
-    d.innerHTML = `<div class="bc-name">${p.name}</div><div class="bc-vals"><span class="bcv">Z1:${p.z[0]}</span><span class="bcv">Z2:${p.z[1]}</span><span class="bcv">Z3:${p.z[2]}</span></div>`;
+    const tierCls = { l:'rb-l', e:'rb-e', r:'rb-r', c:'rb-c' }[p.tier];
+    const tierLbl = { l:'Leg', e:'Epi', r:'Rar', c:'Com' }[p.tier];
+    d.innerHTML = `<div class="bc-name">${p.name}</div><div class="bc-vals"><span class="bcv">C:${p.z[0]}</span><span class="bcv">R:${p.z[1]}</span><span class="bcv">V:${p.z[2]}</span></div><div style="margin-top:3px"><span class="rb ${tierCls}">${tierLbl}</span></div>`;
     d.onclick = () => selectCard(i);
     el.appendChild(d);
   });
   document.getElementById('basket-hint').textContent = G.over ? '' : 'Clicca per selezionare';
   document.getElementById('btn-ins').disabled = G.selected < 0 || G.over;
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+
+let currentTab = 'rarity';
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['rarity','pieces','rules'].forEach(t => {
+    document.getElementById('panel-'+t).style.display = t === tab ? '' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'pieces') populatePieceEditor();
+}
+
+function openSettings() {
+  // Rarità sliders
+  const tiersEl = document.getElementById('rarity-tiers');
+  tiersEl.innerHTML = '';
+  TIERS.forEach(t => {
+    const count = ALL_PIECES.filter(p => tierOf(getEffectivePiece(p).val) === t.id).length;
+    const row = document.createElement('div');
+    row.className = 'rarity-row';
+    row.innerHTML = `
+      <div class="rarity-label">
+        <span class="rb ${t.cls}">${t.label}</span> &nbsp;${t.range}
+        <small>${count} pezzi</small>
+      </div>
+      <input type="range" class="rarity-slider" id="slider-${t.id}" min="0" max="20" step="1" value="${SETTINGS.weights[t.id]}"
+             oninput="document.getElementById('val-${t.id}').textContent=this.value">
+      <div class="rarity-val" id="val-${t.id}">${SETTINGS.weights[t.id]}</div>
+    `;
+    tiersEl.appendChild(row);
+  });
+
+  // Win score
+  document.getElementById('win-slider').value = SETTINGS.winPts;
+  document.getElementById('win-val').textContent = SETTINGS.winPts;
+
+  // Mostra tab corrente
+  switchTab(currentTab);
+
+  document.getElementById('settings-overlay').classList.add('show');
+}
+
+function populatePieceEditor() {
+  const tbody = document.getElementById('piece-edit-tbody');
+  const search = (document.getElementById('piece-search')?.value || '').toLowerCase();
+  tbody.innerHTML = '';
+
+  [...ALL_PIECES]
+    .filter(p => !search || p.name.toLowerCase().includes(search))
+    .sort((a,b) => a.name.localeCompare(b.name))
+    .forEach(p => {
+      const eff = getEffectivePiece(p);
+      const t = tierOf(eff.val);
+      const tierCls = { l:'rb-l', e:'rb-e', r:'rb-r', c:'rb-c' }[t];
+      const tierLbl = { l:'Leg', e:'Epi', r:'Rar', c:'Com' }[t];
+      const hasOv = !!PIECE_OVERRIDES[p.name];
+
+      const tr = document.createElement('tr');
+      tr.dataset.pname = p.name;
+      tr.innerHTML = `
+        <td style="font-size:11px;${hasOv?'color:var(--gold)':''}">${p.name}</td>
+        <td><input class="piece-edit-input${hasOv?' changed':''}" data-field="0" data-piece="${p.name}" type="number" min="0" max="4" value="${eff.z[0]}" oninput="onPieceInput(this)"></td>
+        <td><input class="piece-edit-input${hasOv?' changed':''}" data-field="1" data-piece="${p.name}" type="number" min="0" max="4" value="${eff.z[1]}" oninput="onPieceInput(this)"></td>
+        <td><input class="piece-edit-input${hasOv?' changed':''}" data-field="2" data-piece="${p.name}" type="number" min="0" max="4" value="${eff.z[2]}" oninput="onPieceInput(this)"></td>
+        <td><input class="piece-edit-input${hasOv?' changed':''}" data-field="val" data-piece="${p.name}" type="number" min="1" max="99" value="${eff.val}" oninput="onPieceInput(this)"></td>
+        <td><span class="rb ${tierCls}" id="badge-${p.name.replace(/\s/g,'_')}">${tierLbl}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+}
+
+function filterPieceTable() {
+  populatePieceEditor();
+}
+
+function onPieceInput(input) {
+  const pname = input.dataset.piece;
+  const field = input.dataset.field;
+  const orig = ALL_PIECES.find(p => p.name === pname);
+  if (!orig) return;
+
+  // Leggi tutti i valori correnti dalla riga
+  const row = input.closest('tr');
+  const inputs = row.querySelectorAll('.piece-edit-input');
+  const z0 = parseInt(inputs[0].value) || 0;
+  const z1 = parseInt(inputs[1].value) || 0;
+  const z2 = parseInt(inputs[2].value) || 0;
+  const val = parseInt(inputs[3].value) || 1;
+
+  // Salva override solo se diverso dal default
+  const isDefault = z0 === orig.z[0] && z1 === orig.z[1] && z2 === orig.z[2] && val === orig.val;
+  if (isDefault) {
+    delete PIECE_OVERRIDES[pname];
+  } else {
+    PIECE_OVERRIDES[pname] = { z: [z0, z1, z2], val };
+  }
+
+  // Aggiorna badge rarità in tempo reale
+  const newTier = tierOf(val);
+  const tierCls = { l:'rb-l', e:'rb-e', r:'rb-r', c:'rb-c' }[newTier];
+  const tierLbl = { l:'Leg', e:'Epi', r:'Rar', c:'Com' }[newTier];
+  const badge = document.getElementById('badge-' + pname.replace(/\s/g,'_'));
+  if (badge) { badge.className = 'rb ' + tierCls; badge.textContent = tierLbl; }
+
+  // Evidenzia riga modificata
+  inputs.forEach(i => i.classList.toggle('changed', !isDefault));
+  row.querySelector('td').style.color = isDefault ? '' : 'var(--gold)';
+}
+
+function resetPieceValues() {
+  PIECE_OVERRIDES = {};
+  populatePieceEditor();
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('show');
+}
+
+function applySettings() {
+  SETTINGS.weights.l = parseInt(document.getElementById('slider-l').value);
+  SETTINGS.weights.e = parseInt(document.getElementById('slider-e').value);
+  SETTINGS.weights.r = parseInt(document.getElementById('slider-r').value);
+  SETTINGS.weights.c = parseInt(document.getElementById('slider-c').value);
+  SETTINGS.winPts    = parseInt(document.getElementById('win-slider').value);
+
+  if (Object.values(SETTINGS.weights).every(w => w === 0)) SETTINGS.weights.c = 1;
+
+  POOL = buildPool();
+  closeSettings();
+  resetGame();
 }
 
 function renderLog() {
@@ -706,3 +1021,4 @@ initGame();
 </script>
 </body>
 </html>
+
