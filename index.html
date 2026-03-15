@@ -265,29 +265,19 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 11px;
     color: var(--text3);
     font-family: 'BurbankBig', monospace;
     transition: border-color 0.2s, background 0.2s;
     text-align: center;
     gap: 3px;
   }
-  .phase-slot.ps-done {
-    border-style: solid;
-    border-color: var(--border2);
-    background: var(--bg2);
-    color: var(--text2);
-  }
-  .phase-slot.ps-active {
-    border-style: solid;
-    border-color: var(--gold);
-    background: var(--goldbg);
-    color: var(--text);
-  }
+  .phase-slot.ps-done { border-style: solid; border-color: var(--border2); background: var(--bg2); color: var(--text2); }
+  .phase-slot.ps-active { border-style: solid; border-color: var(--gold); background: var(--goldbg); color: var(--text); }
   .phase-slot.ps-active .ps-label { color: var(--gold); }
-  .ps-label { font-size: 20px; font-weight: bold; letter-spacing: 0.06em; }
-  .ps-piece-name { font-size: 24px; font-weight: bold; }
-  .ps-piece-vals { font-size: 20px; color: var(--text2); }
+  .ps-label { font-size: 10px; font-weight: bold; letter-spacing: 0.06em; }
+  .ps-piece-name { font-size: 12px; font-weight: bold; }
+  .ps-piece-vals { font-size: 10px; color: var(--text2); }
 
   /* BASKET */
   .basket-header {
@@ -470,6 +460,12 @@
     .bcard { flex: unset; min-width: unset; }
     .bcv { font-size: 10px; padding: 1px 3px; font-family: sans-serif; }
 
+    /* Ripristina dimensioni grandi per i box Pezzo 1/2 su desktop */
+    .phase-slot { font-size: 22px; }
+    .ps-label { font-size: 20px; }
+    .ps-piece-name { font-size: 24px; }
+    .ps-piece-vals { font-size: 20px; }
+
     /* Log: nascosto sotto il campo, visibile nella sidebar */
     .log-mobile { display: none; }
     .log-desktop { display: block; margin-top: 12px; }
@@ -549,7 +545,6 @@
       <h1>Scacchi dei Pinci</h1>
       <button class="btn-settings" onclick="openSettings()" title="Impostazioni">⚙</button>
     </div>
-    <p>BATTAGLIA LINEARE · 5 CASELLE · 3 ZONE</p>
   </div>
 
   <!-- SCOREBOARD -->
