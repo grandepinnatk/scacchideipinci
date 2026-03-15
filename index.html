@@ -401,9 +401,82 @@
   }
   .win-btn:hover { opacity: 0.85; }
 
+  /* ── LAYOUT SYSTEM ─────────────────────────────────────── */
+
+  /* MOBILE default: tutto verticale, basket orizzontale scrollabile */
+  .main-layout { display: flex; flex-direction: column; gap: 12px; }
+  .col-field { width: 100%; }
+  .col-sidebar { width: 100%; }
+
+  /* Basket mobile: riga unica scrollabile */
+  .basket-grid {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+  .basket-grid::-webkit-scrollbar { height: 4px; }
+  .basket-grid::-webkit-scrollbar-track { background: transparent; }
+  .basket-grid::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Basket cards in mobile: larghezza fissa per lo scroll */
+  .bcard { flex: 0 0 110px; min-width: 110px; }
+
+  /* Log mobile: visibile, log desktop: nascosto */
+  .log-mobile { display: block; margin-top: 12px; }
+  .log-desktop { display: none; }
+
+  /* DESKTOP / TABLET: layout side-by-side da 768px in su */
+  @media (min-width: 768px) {
+    #app { max-width: 1400px; }
+
+    .main-layout {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .col-field {
+      flex: 0 0 55%;
+      width: 55%;
+    }
+    .col-sidebar {
+      flex: 0 0 calc(45% - 20px);
+      width: calc(45% - 20px);
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border2) transparent;
+    }
+    .col-sidebar::-webkit-scrollbar { width: 4px; }
+    .col-sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* Basket desktop: griglia a 5 colonne nella sidebar */
+    .basket-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      flex-direction: unset;
+      overflow-x: unset;
+      overflow-y: unset;
+      padding-bottom: 0;
+    }
+    .bcard { flex: unset; min-width: unset; }
+    .bcv { font-size: 10px; padding: 1px 3px; font-family: sans-serif; }
+
+    /* Log: nascosto sotto il campo, visibile nella sidebar */
+    .log-mobile { display: none; }
+    .log-desktop { display: block; margin-top: 12px; }
+  }
+
   /* Responsive small screens */
   @media (max-width: 480px) {
-    .basket-grid { grid-template-columns: repeat(5, 1fr); }
     .bc-name { font-size: 13px; }
     .cell { min-height: 78px; }
   }
@@ -500,34 +573,48 @@
   <!-- TURN BANNER -->
   <div class="turn-banner" id="tbanner"></div>
 
-  <!-- CAMPO -->
-  <div class="field-section">
-    <div class="zone-row">
-      <div class="zone-lbl" style="color:rgba(74,140,220,0.8)">CASTELLO</div>
-      <div class="zone-lbl" style="color:rgba(232,160,32,0.9)">SALA DEL RE</div>
-      <div class="zone-lbl" style="color:rgba(80,160,80,0.8)">VILLAGGIO</div>
+  <!-- MAIN LAYOUT: campo sx + sidebar dx su desktop -->
+  <div class="main-layout">
+
+    <!-- COLONNA SINISTRA: campo -->
+    <div class="col-field">
+      <div class="field-section">
+        <div class="zone-row">
+          <div class="zone-lbl" style="color:rgba(74,140,220,0.8)">CASTELLO</div>
+          <div class="zone-lbl" style="color:rgba(232,160,32,0.9)">SALA DEL RE</div>
+          <div class="zone-lbl" style="color:rgba(80,160,80,0.8)">VILLAGGIO</div>
+        </div>
+        <div class="field-row" id="field"></div>
+      </div>
+
+      <!-- PHASE SLOTS: sempre sotto il campo -->
+      <div class="phase-indicator" id="phase-slots"></div>
+
+      <!-- LOG (solo mobile: sotto il campo) -->
+      <div class="log-wrap log-mobile" id="log-mobile"></div>
     </div>
-    <div class="field-row" id="field"></div>
+
+    <!-- COLONNA DESTRA: basket + controlli -->
+    <div class="col-sidebar">
+
+      <!-- BASKET -->
+      <div class="basket-header">
+        <span class="basket-label">BASKET COMUNE</span>
+        <span class="basket-hint" id="basket-hint"></span>
+      </div>
+      <div class="basket-grid" id="bgrid"></div>
+
+      <!-- ACTIONS -->
+      <div class="action-row">
+        <button class="btn btn-insert" id="btn-ins" onclick="doInsert()" disabled>Gioca Carta</button>
+        <button class="btn btn-small" onclick="resetGame()">Nuova partita</button>
+      </div>
+
+      <!-- LOG (solo desktop: nella sidebar) -->
+      <div class="log-wrap log-desktop" id="log"></div>
+    </div>
+
   </div>
-
-  <!-- PHASE SLOTS -->
-  <div class="phase-indicator" id="phase-slots"></div>
-
-  <!-- BASKET -->
-  <div class="basket-header">
-    <span class="basket-label">BASKET COMUNE</span>
-    <span class="basket-hint" id="basket-hint"></span>
-  </div>
-  <div class="basket-grid" id="bgrid"></div>
-
-  <!-- ACTIONS -->
-  <div class="action-row">
-    <button class="btn btn-insert" id="btn-ins" onclick="doInsert()" disabled>Inserisci nel campo</button>
-    <button class="btn btn-small" onclick="resetGame()">Nuova partita</button>
-  </div>
-
-  <!-- LOG -->
-  <div class="log-wrap" id="log"></div>
 </div>
 
 <!-- SETTINGS OVERLAY -->
@@ -1198,11 +1285,14 @@ function applySettings() {
 }
 
 function renderLog() {
-  const el = document.getElementById('log');
-  el.innerHTML = G.log.slice(-30).map(l =>
+  const html = G.log.slice(-30).map(l =>
     `<div class="log-entry${l.isCombat?' le-combat':''}">${l.html}</div>`
   ).join('');
-  el.scrollTop = el.scrollHeight;
+  // Aggiorna entrambi i log (mobile e desktop)
+  ['log', 'log-mobile'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.innerHTML = html; el.scrollTop = el.scrollHeight; }
+  });
 }
 
 
