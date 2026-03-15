@@ -428,8 +428,8 @@
   /* Basket cards in mobile: larghezza fissa per lo scroll */
   .bcard { flex: 0 0 110px; min-width: 110px; }
 
-  /* Log mobile: visibile, log desktop: nascosto */
-  .log-mobile { display: block; margin-top: 12px; }
+  /* Log mobile: visibile in fondo, log desktop: nascosto */
+  .log-mobile { display: block; margin-top: 16px; }
   .log-desktop { display: none; }
 
   /* DESKTOP / TABLET: layout side-by-side da 768px in su */
@@ -589,9 +589,6 @@
 
       <!-- PHASE SLOTS: sempre sotto il campo -->
       <div class="phase-indicator" id="phase-slots"></div>
-
-      <!-- LOG (solo mobile: sotto il campo) -->
-      <div class="log-wrap log-mobile" id="log-mobile"></div>
     </div>
 
     <!-- COLONNA DESTRA: basket + controlli -->
@@ -615,6 +612,9 @@
     </div>
 
   </div>
+
+  <!-- LOG mobile: sempre in fondo alla pagina -->
+  <div class="log-wrap log-mobile" id="log-mobile"></div>
 </div>
 
 <!-- SETTINGS OVERLAY -->
