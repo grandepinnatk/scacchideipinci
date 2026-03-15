@@ -149,18 +149,28 @@
   }
   .piece-chip {
     border-radius: 5px;
-    padding: 4px 5px;
+    padding: 3px 4px;
     font-size: 9px;
     line-height: 1.4;
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
   .piece-chip.pc-p1 { background: var(--p1bg); border: 1px solid var(--p1border); }
   .piece-chip.pc-p2 { background: var(--p2bg); border: 1px solid var(--p2border); }
-  .pc-name { font-weight: bold; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pc-img { width: 32px; height: 42px; flex-shrink: 0; border-radius: 3px; overflow: hidden; background: #0f0e0d; }
+  .pc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pc-info { flex: 1; min-width: 0; }
+  .pc-name { font-weight: bold; font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pc-p1 .pc-name { color: var(--p1); }
   .pc-p2 .pc-name { color: var(--p2); }
-  .pc-vals { color: var(--text2); font-family: monospace; font-size: 8px; }
+  .pc-vals { color: var(--text2); font-family: monospace; font-size: 7px; }
   .pc-zone-hi { color: var(--gold); font-weight: bold; }
+
+  /* BASKET card with illustration */
+  .bc-img { width: 100%; aspect-ratio: 3/4; display: block; overflow: hidden; border-radius: 4px 4px 0 0; background: #0f0e0d; }
+  .bc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   /* PHASE INDICATOR */
   .phase-indicator {
@@ -221,10 +231,11 @@
     background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 7px 6px;
+    padding: 6px 5px;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s, transform 0.1s;
     user-select: none;
+    text-align: center;
   }
   .bcard:hover { border-color: var(--border2); background: var(--bg3); }
   .bcard:active { transform: scale(0.97); }
@@ -509,6 +520,50 @@
 <script>
 // ─── DATI ────────────────────────────────────────────────────────────────────
 const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
+
+// ─── ILLUSTRAZIONI BORGES ────────────────────────────────────────────────────
+const PIECE_IMG = {
+  "Spalacacca": "img/spalacacca.png",
+  "Sentinella Sicula": "img/sentinella_sicula.png",
+  "U Porco": "img/u_porco.png",
+  "Jullare": "img/jullare.png",
+  "L'impiccato": "img/l_impiccato.png",
+  "Scavafossati": "img/scavafossati.png",
+  "Genuflesso": "img/genuflesso.png",
+  "Imboscato": "img/imboscato.png",
+  "Srotolatappeti": "img/srotolatappeti.png",
+  "Il letterato": "img/il_letterato.png",
+  "Accenditorce": "img/accenditorce.png",
+  "Mangiapane": "img/mangiapane.png",
+  "Catapulta Umana": "img/catapulta_umana.png",
+  "Lebbroso": "img/lebbroso.png",
+  "Calpestato": "img/calpestato.png",
+  "Raccoglifrecce": "img/raccoglifrecce.png",
+  "Gattara": "img/gattara.png",
+  "Esattore": "img/esattore.png",
+  "Reggitrono": "img/reggitrono.png",
+  "Sventolatore": "img/sventolatore.png",
+  "Ratto di Fogna": "img/ratto_di_fogna.png",
+  "Spaventapasseri": "img/spaventapasseri.png",
+  "Bevipozioni": "img/bevipozioni.png",
+  "Portaspade": "img/portaspade.png",
+  "Suonacampane": "img/suonacampane.png",
+  "Alzaponte": "img/alzaponte.png",
+  "Fagiano di corte": "img/fagiano_di_corte.png",
+  "Vendistracci": "img/vendistracci.png",
+  "Guaritore Cieco": "img/guaritore_cieco.png",
+  "Boia Tagliateste": "img/boia_tagliateste.png",
+  "Cellaio": "img/cellaio.png",
+  "Arciere gobbo": "img/arciere_gobbo.png",
+  "Spadaccino monco": "img/spadaccino_monco.png",
+  "Frate Ubriaco": "img/frate_ubriaco.png",
+  "Monaco Obeso": "img/monaco_obeso.png",
+  "Apparecchiatavoli": "img/apparecchiatavoli.png",
+};
+
+function getPieceImg(name) {
+  return PIECE_IMG[name] || "";
+}
 
 const ALL_PIECES = [
   {name:"Spalacacca",         z:[1,1,2], val:20},
@@ -814,11 +869,10 @@ function renderField() {
     if (slot.p1) {
       const d = document.createElement('div');
       d.className = 'piece-chip pc-p1';
-      // Evidenzia il valore della zona attuale
       const vals = slot.p1.z.map((v, zi) =>
         zi === z ? `<span class="pc-zone-hi">${v}</span>` : v
       ).join('·');
-      d.innerHTML = `<div class="pc-name">${slot.p1.name}</div><div class="pc-vals">${vals}</div>`;
+      d.innerHTML = `<div class="pc-img"><img src="${getPieceImg(slot.p1.name)}" alt="${slot.p1.name}" onerror="this.style.display='none'"></div><div class="pc-info"><div class="pc-name">${slot.p1.name}</div><div class="pc-vals">${vals}</div></div>`;
       cell.appendChild(d);
     }
     if (slot.p2) {
@@ -827,7 +881,7 @@ function renderField() {
       const vals = slot.p2.z.map((v, zi) =>
         zi === z ? `<span class="pc-zone-hi">${v}</span>` : v
       ).join('·');
-      d.innerHTML = `<div class="pc-name">${slot.p2.name}</div><div class="pc-vals">${vals}</div>`;
+      d.innerHTML = `<div class="pc-img"><img src="${getPieceImg(slot.p2.name)}" alt="${slot.p2.name}" onerror="this.style.display='none'"></div><div class="pc-info"><div class="pc-name">${slot.p2.name}</div><div class="pc-vals">${vals}</div></div>`;
       cell.appendChild(d);
     }
 
@@ -867,7 +921,11 @@ function renderBasket() {
     d.className = 'bcard' + (i === G.selected ? ' selected' : '') + (G.over ? ' disabled' : '');
     const tierCls = { l:'rb-l', e:'rb-e', r:'rb-r', c:'rb-c' }[p.tier];
     const tierLbl = { l:'Leg', e:'Epi', r:'Rar', c:'Com' }[p.tier];
-    d.innerHTML = `<div class="bc-name">${p.name}</div><div class="bc-vals"><span class="bcv">C:${p.z[0]}</span><span class="bcv">R:${p.z[1]}</span><span class="bcv">V:${p.z[2]}</span></div><div style="margin-top:3px"><span class="rb ${tierCls}">${tierLbl}</span></div>`;
+    d.innerHTML = `
+      <div class="bc-img"><img src="${getPieceImg(p.name)}" alt="${p.name}" onerror="this.style.display='none'"></div>
+      <div class="bc-name">${p.name}</div>
+      <div class="bc-vals"><span class="bcv">C:${p.z[0]}</span><span class="bcv">R:${p.z[1]}</span><span class="bcv">V:${p.z[2]}</span></div>
+      <div style="margin-top:3px"><span class="rb ${tierCls}">${tierLbl}</span></div>`;
     d.onclick = () => selectCard(i);
     el.appendChild(d);
   });
@@ -1016,9 +1074,9 @@ function renderLog() {
   el.scrollTop = el.scrollHeight;
 }
 
+
 // ─── START ────────────────────────────────────────────────────────────────────
 initGame();
 </script>
 </body>
 </html>
-
