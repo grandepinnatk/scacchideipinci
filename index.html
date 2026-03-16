@@ -968,6 +968,19 @@
   </div>
 </div>
 
+<!-- FORFEIT MODAL -->
+<div class="overlay" id="forfeit-modal">
+  <div class="win-box" style="max-width:360px">
+    <div class="win-icon">⚠️</div>
+    <div class="win-title" style="font-size:20px;color:var(--text)">Abbandonare la partita?</div>
+    <div class="win-score" style="color:var(--text2);font-size:14px;margin:10px 0 20px">La vittoria sarà assegnata al tuo avversario.</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="win-btn" style="background:transparent;border:1px solid var(--border2);color:var(--text2);min-width:120px" onclick="cancelForfeit()">Annulla</button>
+      <button class="win-btn" style="background:#c0392b;min-width:120px" onclick="confirmForfeit()">Abbandona</button>
+    </div>
+  </div>
+</div>
+
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -1296,8 +1309,17 @@ function startOnlineGame(gameId, myIndex, opponentName) {
   if (MP.heartbeatInterval) clearInterval(MP.heartbeatInterval);
   MP.heartbeatInterval = setInterval(() => set(MP.presenceRef, Date.now()), 20000);
 
+  // Load initial state immediately (handles case where Firebase already has data)
+  get(MP.gameRef).then(snap => {
+    if (snap.exists()) {
+      Object.assign(G, snap.val());
+      G.selected = -1;
+      renderAll();
+      startTurnTimer();
+    }
+  });
+
   // Listen to game state — single source of truth
-  // Always apply state from Firebase (no echo-skip: both players need the initial render)
   onValue(MP.gameRef, snap => {
     if (!snap.exists()) return;
     const state = snap.val();
@@ -1387,11 +1409,17 @@ function autoPlayWorstCard() {
 // ─── FORFEIT / ABANDON ───────────────────────────────────────────────────────
 async function forfeitGame() {
   if (!MP.isOnline || !MP.gameId) return;
-  const ok = confirm('Sei sicuro di voler abbandonare la partita? La vittoria sarà assegnata all\'avversario.');
-  if (!ok) return;
-  // Scrivi lo stato finale su Firebase — onValue lo riceverà su ENTRAMBI i client
-  // e mostrerà il popup personalizzato (HAI VINTO / HAI PERSO) a ciascuno
+  showForfeitModal();
+}
+function showForfeitModal() {
+  document.getElementById('forfeit-modal').classList.add('show');
+}
+async function confirmForfeit() {
+  document.getElementById('forfeit-modal').classList.remove('show');
   await applyGameOver(false);
+}
+function cancelForfeit() {
+  document.getElementById('forfeit-modal').classList.remove('show');
 }
 async function handleOpponentAbandoned() {
   if (!MP.gameId || G.over) return;
@@ -1511,6 +1539,8 @@ window.renderAll = function() {
 
 // ─── EXPOSE TO WINDOW ────────────────────────────────────────────────────────
 window.switchToRegister = switchToRegister;
+window.confirmForfeit   = confirmForfeit;
+window.cancelForfeit    = cancelForfeit;
 window.switchToLogin    = switchToLogin;
 window.authLogin        = authLogin;
 window.authRegister     = authRegister;
