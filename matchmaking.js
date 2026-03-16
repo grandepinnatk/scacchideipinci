@@ -1,40 +1,41 @@
 // ─── matchmaking.js — quick match, invite, partita online, timer, forfeit ────
 
-import { db, auth }          from './firebase.js?v=1773703449';
+import { db, auth }          from './firebase.js?v=1773704244';
 import { ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { MP, currentUser, setCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1773703449';
+import { MP, currentUser, setCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1773704244';
 import { G, POOL, SETTINGS, tierOf, initGame, renderAll, showWinner,
-         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1773703449';
+         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1773704244';
 
 // ─── QUICK MATCH ─────────────────────────────────────────────────────────────
 export async function showQuickMatch() {
   showScreen('screen-quickmatch');
   document.getElementById('qm-status').textContent = 'Cercando un avversario...';
 
-  const myName = currentUser.displayName || currentUser.email.split('@')[0];
   const myUid  = currentUser.uid;
+  const myName = currentUser.displayName || currentUser.email.split('@')[0];
 
-  // ── STEP 1: scrivo me stesso nella coda ──────────────────────────────────
+  // ── Scrivo me stesso nella coda ──────────────────────────────────────────
   MP.queueRef  = ref(db, 'matchmaking/queue/' + myUid);
   MP.isInQueue = true;
   await set(MP.queueRef, { uid: myUid, name: myName, t: Date.now() });
 
-  // ── STEP 2: ascolto il mio slot "match" — se arriva un gameId sono P2 ───
+  // ── Ascolto il mio slot di notifica — se arriva un gameId sono P2 ────────
   const matchSlot = ref(db, 'matchmaking/match/' + myUid);
   onValue(matchSlot, async snap => {
     if (!snap.exists()) return;
     off(matchSlot);
     const { gameId, hostName } = snap.val();
     await remove(matchSlot);
+    if (!MP.isInQueue) return; // già gestito come P1
     MP.isInQueue = false;
     if (MP.pollTimer) { clearTimeout(MP.pollTimer); MP.pollTimer = null; }
-    if (MP.queueRef)  { await remove(MP.queueRef); MP.queueRef = null; }
-    // Sono P2 — carico la partita già creata da P1
+    if (MP.queueRef)  { await remove(MP.queueRef);  MP.queueRef  = null; }
+    // Sono P2
     await startOnlineGame(gameId, 1, hostName);
   });
 
-  // ── STEP 3: polling — ogni 2s controllo se c'è qualcuno in coda ─────────
+  // ── Polling — ogni 2s cerco un avversario nella coda ─────────────────────
   async function poll() {
     if (!MP.isInQueue) return;
 
@@ -47,7 +48,7 @@ export async function showQuickMatch() {
       return;
     }
 
-    // Cerca il primo utente in coda che NON sono io
+    // Trovo il primo avversario in coda (diverso da me)
     let oppUid = null, oppName = null;
     snap.forEach(child => {
       if (!oppUid && child.key !== myUid) {
@@ -61,14 +62,36 @@ export async function showQuickMatch() {
       return;
     }
 
-    // ── Ho trovato un avversario — divento P1 ────────────────────────────
-    MP.isInQueue = false;
+    // ── Uso una scrittura condizionale per evitare la race condition ─────────
+    // Scrivo un nodo "claim/{myUid}_{oppUid}" — solo chi scrive per primo vince
+    // Se il nodo esiste già, l'altro giocatore ha già creato la partita → aspetto
+    const claimKey = [myUid, oppUid].sort().join('_');
+    const claimRef = ref(db, 'matchmaking/claims/' + claimKey);
 
-    // Rimuovo entrambi dalla coda
-    await remove(MP.queueRef); MP.queueRef = null;
+    // Provo a scrivere il claim solo se non esiste
+    const existingClaim = await get(claimRef);
+    if (existingClaim.exists()) {
+      // Qualcuno ha già creato la partita — aspetto la notifica come P2
+      MP.pollTimer = setTimeout(poll, 1000);
+      return;
+    }
+
+    // Scrivo il claim
+    await set(claimRef, { creator: myUid, t: Date.now() });
+
+    // Verifico di essere ancora io quello che ha scritto (double-check)
+    const claimCheck = await get(claimRef);
+    if (!claimCheck.exists() || claimCheck.val().creator !== myUid) {
+      // Qualcun altro ha vinto la race — aspetto come P2
+      MP.pollTimer = setTimeout(poll, 1000);
+      return;
+    }
+
+    // ── Sono P1 — creo la partita ────────────────────────────────────────────
+    MP.isInQueue = false;
+    if (MP.queueRef) { await remove(MP.queueRef); MP.queueRef = null; }
     await remove(ref(db, 'matchmaking/queue/' + oppUid));
 
-    // Creo la partita
     const gameId = push(ref(db, 'games')).key;
     const state  = buildInitialGameState();
 
@@ -76,19 +99,19 @@ export async function showQuickMatch() {
       p1:      { uid: myUid,  name: myName  },
       p2:      { uid: oppUid, name: oppName },
       state,
-      status:  'playing',
+      status:       'playing',
       createdAt:    Date.now(),
       turnDeadline: Date.now() + TURN_TIMEOUT_MS,
-      presence: { [myUid]: Date.now(), [oppUid]: Date.now() }
+      presence:     { [myUid]: Date.now(), [oppUid]: Date.now() }
     });
 
     // Notifico P2
-    await set(ref(db, 'matchmaking/match/' + oppUid), {
-      gameId,
-      hostName: myName
-    });
+    await set(ref(db, 'matchmaking/match/' + oppUid), { gameId, hostName: myName });
 
-    // Avvio la partita per P1
+    // Pulisco il claim dopo 30s
+    setTimeout(() => remove(claimRef), 30000);
+
+    // Avvio come P1
     await startOnlineGame(gameId, 0, oppName);
   }
 
@@ -168,7 +191,7 @@ export async function cancelInvite() {
 export function buildInitialGameState() {
   return {
     pts:[0,0], turnNum:1, turn:0, pieceStep:0,
-    pipe:Array(5).fill(null).map(()=>({p1:null,p2:null})),
+    pipe:{'0':{p1:null,p2:null},'1':{p1:null,p2:null},'2':{p1:null,p2:null},'3':{p1:null,p2:null},'4':{p1:null,p2:null}},
     basket:Array(10).fill(null).map(()=>{
       const t = POOL[Math.floor(Math.random()*POOL.length)];
       return { name:t.name, z:[...t.z], val:t.val, tier:tierOf(t.val), id:Math.random() };
@@ -184,44 +207,58 @@ export function buildInitialGameState() {
 // This function converts them back to proper JS arrays
 export function normalizeState(state) {
   if (!state) return state;
-  // Convert basket: object → array
+
+  // Firebase omette i valori null negli oggetti — ricostruiamo gli array con indici espliciti
+
+  // ── pipe: deve essere sempre 5 slot {p1, p2} ────────────────────────────
+  if (state.pipe) {
+    const pipeArr = Array(5).fill(null).map(() => ({ p1: null, p2: null }));
+    const rawPipe = Array.isArray(state.pipe) ? state.pipe : Object.entries(state.pipe);
+    const entries = Array.isArray(state.pipe)
+      ? state.pipe.map((v, i) => [i, v])
+      : Object.entries(state.pipe);
+    entries.forEach(([i, slot]) => {
+      const idx = parseInt(i);
+      if (idx >= 0 && idx < 5) {
+        const s = slot || { p1: null, p2: null };
+        const normPiece = (p) => {
+          if (!p) return null;
+          if (p.z && !Array.isArray(p.z)) p.z = Object.values(p.z);
+          return p;
+        };
+        pipeArr[idx] = { p1: normPiece(s.p1), p2: normPiece(s.p2) };
+      }
+    });
+    state.pipe = pipeArr;
+  }
+
+  // ── basket: array di 10 pezzi ─────────────────────────────────────────
   if (state.basket && !Array.isArray(state.basket)) {
     state.basket = Object.values(state.basket);
   }
-  // Convert basket items: z array
   if (state.basket) {
     state.basket = state.basket.map(p => {
-      if (p && p.z && !Array.isArray(p.z)) p.z = Object.values(p.z);
+      if (!p) return p;
+      if (p.z && !Array.isArray(p.z)) p.z = Object.values(p.z);
       return p;
     });
   }
-  // Convert pipe: object → array
-  if (state.pipe && !Array.isArray(state.pipe)) {
-    state.pipe = Object.values(state.pipe);
-  }
-  // Convert pipe slots: p1.z and p2.z
-  if (state.pipe) {
-    state.pipe = state.pipe.map(slot => {
-      if (!slot) return { p1: null, p2: null };
-      if (slot.p1 && slot.p1.z && !Array.isArray(slot.p1.z)) slot.p1.z = Object.values(slot.p1.z);
-      if (slot.p2 && slot.p2.z && !Array.isArray(slot.p2.z)) slot.p2.z = Object.values(slot.p2.z);
-      return slot;
-    });
-  }
-  // Convert pts: object → array
+
+  // ── pts, firstTurnDone, log ───────────────────────────────────────────
   if (state.pts && !Array.isArray(state.pts)) {
-    state.pts = Object.values(state.pts);
+    state.pts = [state.pts[0] ?? 0, state.pts[1] ?? 0];
+    if (!Array.isArray(state.pts)) state.pts = Object.values(state.pts);
   }
-  // Convert firstTurnDone: object → array
   if (state.firstTurnDone && !Array.isArray(state.firstTurnDone)) {
     state.firstTurnDone = Object.values(state.firstTurnDone);
   }
-  // Convert log: object → array
   if (state.log && !Array.isArray(state.log)) {
     state.log = Object.values(state.log);
   }
+
   return state;
 }
+
 
 export async function startOnlineGame(gameId, myIndex, opponentName) {
   MP.isOnline      = true;
@@ -402,7 +439,12 @@ export async function applyGameOver(weWin) {
   const pts = [...G.pts];
   if (weWin) { pts[MP.myIndex] = SETTINGS.winPts; pts[1-MP.myIndex] = 0; }
   else       { pts[1-MP.myIndex] = SETTINGS.winPts; pts[MP.myIndex] = 0; }
-  const finalState = { ...G, pts, over:true, selected:-1 };
+  const serializePipe = (pipe) => {
+    const obj = {};
+    (pipe||[]).forEach((slot, i) => { obj[i] = { p1: slot?.p1||null, p2: slot?.p2||null }; });
+    return obj;
+  };
+  const finalState = { ...G, pts, pipe: serializePipe(G.pipe), over:true, selected:-1 };
   await set(MP.gameRef, finalState);
   await update(ref(db,'games/'+MP.gameId), { status:'finished' });
   // Non chiamare showWinner qui — onValue su entrambi i client gestirà il rendering
@@ -452,9 +494,21 @@ export function doInsert() {
   _origDoInsert();
   // Push to Firebase — onValue will echo back to BOTH players (including us)
   // so both screens update from the same source of truth
+  // Serializza pipe come oggetto con chiavi stringa per preservare gli slot null
+  // (Firebase rimuove i valori null dagli array ma non dagli oggetti con chiavi stringa)
+  const serializePipe = (pipe) => {
+    const obj = {};
+    pipe.forEach((slot, i) => {
+      obj[i] = {
+        p1: slot.p1 || null,
+        p2: slot.p2 || null,
+      };
+    });
+    return obj;
+  };
   const stateToSave = {
     pts:G.pts, turnNum:G.turnNum, turn:G.turn, pieceStep:G.pieceStep,
-    pipe:G.pipe, basket:G.basket, log:G.log, over:G.over,
+    pipe:serializePipe(G.pipe), basket:G.basket, log:G.log, over:G.over,
     firstTurnDone:G.firstTurnDone, selected:-1
   };
   set(MP.gameRef, stateToSave);
