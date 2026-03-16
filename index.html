@@ -1306,7 +1306,10 @@ function startOnlineGame(gameId, myIndex, opponentName) {
     renderAll();
     if (state.over) {
       clearTurnTimer();
-      setTimeout(() => { updateEloStats(state); showWinner(); }, 400);
+      setTimeout(async () => {
+        await updateEloStats(state);
+        showWinner();
+      }, 400);
     } else {
       startTurnTimer();
     }
@@ -1384,11 +1387,11 @@ function autoPlayWorstCard() {
 // ─── FORFEIT / ABANDON ───────────────────────────────────────────────────────
 async function forfeitGame() {
   if (!MP.isOnline || !MP.gameId) return;
-  const ok = confirm('Abbandonare la partita? La vittoria verrà assegnata al tuo avversario.');
+  const ok = confirm('Sei sicuro di voler abbandonare la partita? La vittoria sarà assegnata all\'avversario.');
   if (!ok) return;
+  // Scrivi lo stato finale su Firebase — onValue lo riceverà su ENTRAMBI i client
+  // e mostrerà il popup personalizzato (HAI VINTO / HAI PERSO) a ciascuno
   await applyGameOver(false);
-  // Return to lobby after a short delay (let showWinner display briefly)
-  setTimeout(() => cleanupMP(true), 1500);
 }
 async function handleOpponentAbandoned() {
   if (!MP.gameId || G.over) return;
@@ -1405,10 +1408,8 @@ async function applyGameOver(weWin) {
   const finalState = { ...G, pts, over:true, selected:-1 };
   await set(MP.gameRef, finalState);
   await update(ref(db,'games/'+MP.gameId), { status:'finished' });
-  Object.assign(G, finalState);
-  await updateEloStats(finalState);
-  renderAll();
-  showWinner();
+  // Non chiamare showWinner qui — onValue su entrambi i client gestirà il rendering
+  // incluso il popup HAI VINTO / HAI PERSO personalizzato
 }
 
 // ─── CLEANUP ─────────────────────────────────────────────────────────────────
@@ -1465,7 +1466,8 @@ const _origResetGame = resetGame;
 window.resetGame = function() {
   if (MP.isOnline) {
     if (G.over) {
-      // Game already over — just return to lobby
+      // Partita finita — chiudi overlay e torna alla lobby
+      document.getElementById('overlay').classList.remove('show');
       cleanupMP(true);
     } else {
       forfeitGame();
@@ -1849,11 +1851,33 @@ function doInsert() {
 }
 
 function showWinner() {
-  const w = G.pts[0] >= SETTINGS.winPts ? 'Giocatore 1' : 'Giocatore 2';
   const wp = Math.max(G.pts[0], G.pts[1]);
   const lp = Math.min(G.pts[0], G.pts[1]);
-  document.getElementById('wtitle').textContent = w + ' vince!';
-  document.getElementById('wscore').textContent = `Punteggio finale: ${wp} – ${lp}`;
+  const icon  = document.querySelector('#overlay .win-icon');
+  const title = document.getElementById('wtitle');
+  const score = document.getElementById('wscore');
+
+  if (MP.isOnline) {
+    const iWon = G.pts[MP.myIndex] > G.pts[1 - MP.myIndex];
+    if (iWon) {
+      if (icon)  icon.textContent  = '🏆';
+      title.textContent = 'HAI VINTO!';
+      title.style.color = 'var(--gold)';
+    } else {
+      if (icon)  icon.textContent  = '💀';
+      title.textContent = 'HAI PERSO!';
+      title.style.color = '#ff6b47';
+    }
+  } else {
+    const w = G.pts[0] >= SETTINGS.winPts ? 'Giocatore 1' : 'Giocatore 2';
+    if (icon)  icon.textContent  = '🏆';
+    title.textContent = w + ' vince!';
+    title.style.color = '';
+  }
+  score.textContent = `Punteggio finale: ${wp} – ${lp}`;
+  // In online mode change button label to "Torna alla lobby"
+  const winBtn = document.querySelector('#overlay .win-btn');
+  if (winBtn) winBtn.textContent = MP.isOnline ? 'Torna alla lobby' : 'Nuova partita';
   document.getElementById('overlay').classList.add('show');
 }
 
