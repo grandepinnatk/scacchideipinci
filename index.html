@@ -998,61 +998,59 @@ let currentUser = null;
 let MP = {
   isOnline: false,
   gameId: null,
-  myIndex: 0,       // 0=G1, 1=G2
+  myIndex: 0,
   opponentName: '',
   gameRef: null,
+  presenceRef: null,
   queueRef: null,
   inviteRef: null,
+  heartbeatInterval: null,
+  disconnectTimer: null,
+  turnTimer: null,
+  lastSavedHash: null,
 };
+const TURN_TIMEOUT_MS = 45000;
+const ABANDON_MS      = 120000;
 
-// ─── AUTH UI ──────────────────────────────────────────────────────────────────
+// ─── AUTH UI ─────────────────────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
-  document.getElementById(id).classList.add('show');
+  const el = document.getElementById(id);
+  if (el) el.classList.add('show');
 }
-
-window.switchToRegister = () => {
+function switchToRegister() {
   document.getElementById('auth-form-login').style.display = 'none';
   document.getElementById('auth-form-register').style.display = '';
   document.getElementById('auth-mode-sub').textContent = 'Crea un nuovo account';
   document.getElementById('auth-err').textContent = '';
-};
-window.switchToLogin = () => {
+}
+function switchToLogin() {
   document.getElementById('auth-form-register').style.display = 'none';
   document.getElementById('auth-form-login').style.display = '';
   document.getElementById('auth-mode-sub').textContent = 'Accedi per giocare online';
   document.getElementById('auth-err').textContent = '';
-};
-
+}
 function setAuthErr(msg) { document.getElementById('auth-err').textContent = msg; }
-
 function firebaseErrMsg(code) {
   const map = {
-    'auth/email-already-in-use': 'Email già in uso',
-    'auth/invalid-email': 'Email non valida',
-    'auth/weak-password': 'Password troppo corta (min 6 caratteri)',
-    'auth/wrong-password': 'Password errata',
-    'auth/user-not-found': 'Nessun account con questa email',
-    'auth/invalid-credential': 'Credenziali non valide',
-    'auth/popup-closed-by-user': 'Login annullato',
-    'auth/cancelled-popup-request': '',
+    'auth/email-already-in-use':'Email già in uso','auth/invalid-email':'Email non valida',
+    'auth/weak-password':'Password troppo corta (min 6 caratteri)','auth/wrong-password':'Password errata',
+    'auth/user-not-found':'Nessun account con questa email','auth/invalid-credential':'Credenziali non valide',
+    'auth/popup-closed-by-user':'Login annullato','auth/cancelled-popup-request':'',
   };
   return map[code] || 'Errore: ' + code;
 }
-
-window.authLogin = async () => {
+async function authLogin() {
   const email = document.getElementById('auth-email').value.trim();
-  const pw = document.getElementById('auth-password').value;
+  const pw    = document.getElementById('auth-password').value;
   if (!email || !pw) { setAuthErr('Compila tutti i campi'); return; }
-  try {
-    await signInWithEmailAndPassword(auth, email, pw);
-  } catch(e) { setAuthErr(firebaseErrMsg(e.code)); }
-};
-
-window.authRegister = async () => {
-  const name = document.getElementById('reg-name').value.trim();
+  try { await signInWithEmailAndPassword(auth, email, pw); }
+  catch(e) { setAuthErr(firebaseErrMsg(e.code)); }
+}
+async function authRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
-  const pw = document.getElementById('reg-password').value;
+  const pw    = document.getElementById('reg-password').value;
   if (!name || !email || !pw) { setAuthErr('Compila tutti i campi'); return; }
   if (name.length < 2) { setAuthErr('Nome troppo corto'); return; }
   try {
@@ -1060,448 +1058,496 @@ window.authRegister = async () => {
     await updateProfile(cred.user, { displayName: name });
     await createUserProfile(cred.user.uid, name);
   } catch(e) { setAuthErr(firebaseErrMsg(e.code)); }
-};
-
-window.authGoogle = async () => {
+}
+async function authGoogle() {
   try {
-    const provider = new GoogleAuthProvider();
-    const cred = await signInWithPopup(auth, provider);
+    const cred = await signInWithPopup(auth, new GoogleAuthProvider());
     await ensureUserProfile(cred.user);
-  } catch(e) { if(e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
-};
-
-window.authMicrosoft = async () => {
+  } catch(e) { if (e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
+}
+async function authMicrosoft() {
   try {
-    const provider = new OAuthProvider('microsoft.com');
-    const cred = await signInWithPopup(auth, provider);
+    const cred = await signInWithPopup(auth, new OAuthProvider('microsoft.com'));
     await ensureUserProfile(cred.user);
-  } catch(e) { if(e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
-};
-
-window.authLogout = async () => {
-  cleanupMP();
+  } catch(e) { if (e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
+}
+async function authLogout() {
+  await cleanupMP(false);
   await signOut(auth);
-};
+}
 
-// ─── USER PROFILE ─────────────────────────────────────────────────────────────
+// ─── USER PROFILE ────────────────────────────────────────────────────────────
 async function createUserProfile(uid, displayName) {
-  await set(ref(db, 'users/' + uid), {
-    displayName,
-    elo: 1000,
-    played: 0,
-    wins: 0,
-    losses: 0,
-    createdAt: Date.now()
-  });
+  await set(ref(db,'users/'+uid), { displayName, elo:1000, played:0, wins:0, losses:0, createdAt:Date.now() });
 }
-
 async function ensureUserProfile(user) {
-  const snap = await get(ref(db, 'users/' + user.uid));
-  if (!snap.exists()) {
-    await createUserProfile(user.uid, user.displayName || user.email.split('@')[0]);
-  }
+  const snap = await get(ref(db,'users/'+user.uid));
+  if (!snap.exists()) await createUserProfile(user.uid, user.displayName || user.email.split('@')[0]);
 }
-
 async function loadLobby(user) {
   currentUser = user;
-  // Update lobby UI
   const name = user.displayName || user.email.split('@')[0];
   document.getElementById('lobby-username').textContent = name;
   const av = document.getElementById('lobby-avatar');
-  if (user.photoURL) {
-    av.innerHTML = `<img src="${user.photoURL}" alt="">`;
-  } else {
-    av.textContent = name[0].toUpperCase();
-  }
-  // Load stats
-  const snap = await get(ref(db, 'users/' + user.uid));
+  av.innerHTML = user.photoURL ? `<img src="${user.photoURL}" alt="">` : name[0].toUpperCase();
+  const snap = await get(ref(db,'users/'+user.uid));
   if (snap.exists()) {
     const d = snap.val();
     document.getElementById('stat-played').textContent = d.played || 0;
-    document.getElementById('stat-wins').textContent = d.wins || 0;
-    document.getElementById('stat-elo').textContent = d.elo || 1000;
+    document.getElementById('stat-wins').textContent   = d.wins   || 0;
+    document.getElementById('stat-elo').textContent    = d.elo    || 1000;
   }
-  // Load leaderboard
+  // Check for resumable game
+  const activeSnap = await get(ref(db,'activeGame/'+user.uid));
+  if (activeSnap.exists()) {
+    const { gameId, myIndex, opponentName } = activeSnap.val();
+    const statusSnap = await get(ref(db,'games/'+gameId+'/status'));
+    if (statusSnap.exists() && statusSnap.val() === 'playing') {
+      if (confirm('Hai una partita in corso contro ' + opponentName + '. Vuoi riprendere?')) {
+        startOnlineGame(gameId, myIndex, opponentName);
+        return;
+      }
+    }
+    await remove(ref(db,'activeGame/'+user.uid));
+  }
   loadLeaderboard();
   showScreen('screen-lobby');
 }
-
 async function loadLeaderboard() {
-  const q = query(ref(db, 'users'), orderByChild('elo'), limitToLast(10));
+  const q = query(ref(db,'users'), orderByChild('elo'), limitToLast(10));
   const snap = await get(q);
   if (!snap.exists()) return;
   const users = [];
-  snap.forEach(child => users.push({ uid: child.key, ...child.val() }));
-  users.sort((a, b) => (b.elo || 1000) - (a.elo || 1000));
+  snap.forEach(c => users.push({ uid:c.key, ...c.val() }));
+  users.sort((a,b) => (b.elo||1000)-(a.elo||1000));
   const tbody = document.getElementById('lb-body');
   tbody.innerHTML = '';
-  users.forEach((u, i) => {
+  users.forEach((u,i) => {
     const tr = document.createElement('tr');
     if (u.uid === currentUser.uid) tr.className = 'lb-me';
-    tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName || '?'}</td><td>${u.elo || 1000}</td><td>${u.wins || 0}</td><td>${u.played || 0}</td>`;
+    tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
     tbody.appendChild(tr);
   });
 }
 
-// ─── AUTH STATE ───────────────────────────────────────────────────────────────
+// ─── AUTH STATE ──────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   setAuthErr('');
-  if (user) {
-    await ensureUserProfile(user);
-    await loadLobby(user);
-  } else {
-    showScreen('screen-auth');
-    switchToLogin();
-  }
+  if (user) { await ensureUserProfile(user); await loadLobby(user); }
+  else { showScreen('screen-auth'); switchToLogin(); }
 });
 
-// ─── QUICK MATCH ──────────────────────────────────────────────────────────────
-window.showQuickMatch = async () => {
+// ─── QUICK MATCH ─────────────────────────────────────────────────────────────
+async function showQuickMatch() {
   showScreen('screen-quickmatch');
   document.getElementById('qm-status').textContent = 'Cercando un avversario';
-  // Look for an existing queue entry
-  const queueSnap = await get(ref(db, 'matchmaking/queue'));
+  const queueSnap = await get(ref(db,'matchmaking/queue'));
   let found = false;
   if (queueSnap.exists()) {
     queueSnap.forEach(child => {
       if (!found && child.val().uid !== currentUser.uid) {
         found = true;
-        const opponentEntry = child.val();
-        const opponentKey = child.key;
-        // Create game
-        createGame(currentUser.uid, opponentEntry.uid, opponentEntry.displayName, opponentKey);
+        createGame(currentUser.uid, child.val().uid, child.val().displayName, child.key);
       }
     });
   }
   if (!found) {
-    // Add self to queue
     const name = currentUser.displayName || currentUser.email.split('@')[0];
-    const myQueueRef = ref(db, 'matchmaking/queue/' + currentUser.uid);
-    await set(myQueueRef, { uid: currentUser.uid, displayName: name, joinedAt: Date.now() });
-    MP.queueRef = myQueueRef;
-    // Listen for game creation
-    const myGameWaitRef = ref(db, 'matchmaking/games/' + currentUser.uid);
-    onValue(myGameWaitRef, (snap) => {
+    MP.queueRef = ref(db,'matchmaking/queue/'+currentUser.uid);
+    await set(MP.queueRef, { uid:currentUser.uid, displayName:name, joinedAt:Date.now() });
+    const waitRef = ref(db,'matchmaking/games/'+currentUser.uid);
+    onValue(waitRef, snap => {
       if (snap.exists()) {
-        off(myGameWaitRef);
-        remove(myGameWaitRef);
+        off(waitRef); remove(waitRef);
         const { gameId, opponentName } = snap.val();
-        joinGameAsP2(gameId, opponentName);
+        startOnlineGame(gameId, 1, opponentName);
       }
     });
   }
-};
-
+}
 async function createGame(p1uid, p2uid, p2name, p2queueKey) {
-  // Remove opponent from queue
-  await remove(ref(db, 'matchmaking/queue/' + p2queueKey));
-  const gameId = push(ref(db, 'games')).key;
+  await remove(ref(db,'matchmaking/queue/'+p2queueKey));
+  const gameId = push(ref(db,'games')).key;
   const p1name = currentUser.displayName || currentUser.email.split('@')[0];
-  const initialState = buildInitialGameState();
-  await set(ref(db, 'games/' + gameId), {
-    p1: { uid: p1uid, name: p1name },
-    p2: { uid: p2uid, name: p2name },
-    state: initialState,
-    createdAt: Date.now(),
-    status: 'playing'
+  const state  = buildInitialGameState();
+  await set(ref(db,'games/'+gameId), {
+    p1:{ uid:p1uid, name:p1name }, p2:{ uid:p2uid, name:p2name },
+    state, createdAt:Date.now(), status:'playing',
+    turnDeadline: Date.now()+TURN_TIMEOUT_MS,
+    presence:{ [p1uid]:Date.now(), [p2uid]:0 }
   });
-  // Notify opponent
-  await set(ref(db, 'matchmaking/games/' + p2uid), { gameId, opponentName: p1name });
+  await set(ref(db,'matchmaking/games/'+p2uid), { gameId, opponentName:p1name });
   startOnlineGame(gameId, 0, p2name);
 }
-
-window.cancelQuickMatch = async () => {
+async function cancelQuickMatch() {
   if (MP.queueRef) { await remove(MP.queueRef); MP.queueRef = null; }
-  cleanupMP();
   showScreen('screen-lobby');
-};
-
-async function joinGameAsP2(gameId, opponentName) {
-  startOnlineGame(gameId, 1, opponentName);
 }
 
-// ─── INVITE ───────────────────────────────────────────────────────────────────
-window.showInvite = async () => {
+// ─── INVITE ──────────────────────────────────────────────────────────────────
+async function showInvite() {
   showScreen('screen-invite');
   document.getElementById('join-err').textContent = '';
   document.getElementById('invite-waiting').style.display = 'none';
-  // Generate 6-char code
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-  document.getElementById('invite-code').textContent = code;
+  const code   = Math.random().toString(36).substring(2,8).toUpperCase();
   const p1name = currentUser.displayName || currentUser.email.split('@')[0];
-  MP.inviteRef = ref(db, 'invites/' + code);
-  await set(MP.inviteRef, {
-    hostUid: currentUser.uid,
-    hostName: p1name,
-    createdAt: Date.now(),
-    status: 'waiting'
-  });
-  // Listen for someone joining
-  onValue(MP.inviteRef, async (snap) => {
+  document.getElementById('invite-code').textContent = code;
+  MP.inviteRef = ref(db,'invites/'+code);
+  await set(MP.inviteRef, { hostUid:currentUser.uid, hostName:p1name, createdAt:Date.now(), status:'waiting' });
+  onValue(MP.inviteRef, async snap => {
     if (!snap.exists()) return;
     const data = snap.val();
     if (data.status === 'joined' && data.guestUid !== currentUser.uid) {
       off(MP.inviteRef);
-      const gameId = push(ref(db, 'games')).key;
-      const initialState = buildInitialGameState();
-      await set(ref(db, 'games/' + gameId), {
-        p1: { uid: currentUser.uid, name: p1name },
-        p2: { uid: data.guestUid, name: data.guestName },
-        state: initialState,
-        createdAt: Date.now(),
-        status: 'playing'
+      const gameId = push(ref(db,'games')).key;
+      const state  = buildInitialGameState();
+      await set(ref(db,'games/'+gameId), {
+        p1:{ uid:currentUser.uid, name:p1name }, p2:{ uid:data.guestUid, name:data.guestName },
+        state, createdAt:Date.now(), status:'playing',
+        turnDeadline:Date.now()+TURN_TIMEOUT_MS,
+        presence:{ [currentUser.uid]:Date.now(), [data.guestUid]:0 }
       });
       await update(MP.inviteRef, { gameId });
       startOnlineGame(gameId, 0, data.guestName);
     }
   });
   document.getElementById('invite-waiting').style.display = 'block';
-};
-
-window.copyCode = () => {
+}
+function copyCode() {
   const code = document.getElementById('invite-code').textContent;
-  navigator.clipboard.writeText(code).catch(() => {});
+  navigator.clipboard.writeText(code).catch(()=>{});
   document.getElementById('invite-code').textContent = '✓ Copiato!';
-  setTimeout(() => { document.getElementById('invite-code').textContent = code; }, 1500);
-};
-
-window.joinByCode = async () => {
+  setTimeout(() => document.getElementById('invite-code').textContent = code, 1500);
+}
+async function joinByCode() {
   const code = document.getElementById('join-code-input').value.trim().toUpperCase();
   if (code.length !== 6) { document.getElementById('join-err').textContent = 'Codice non valido'; return; }
-  const invSnap = await get(ref(db, 'invites/' + code));
+  const invSnap = await get(ref(db,'invites/'+code));
   if (!invSnap.exists() || invSnap.val().status !== 'waiting') {
-    document.getElementById('join-err').textContent = 'Codice non trovato o scaduto';
-    return;
+    document.getElementById('join-err').textContent = 'Codice non trovato o scaduto'; return;
   }
-  const invData = invSnap.val();
+  const invData   = invSnap.val();
   if (invData.hostUid === currentUser.uid) {
-    document.getElementById('join-err').textContent = 'Non puoi unirti alla tua stessa partita';
-    return;
+    document.getElementById('join-err').textContent = 'Non puoi unirti alla tua partita'; return;
   }
   const guestName = currentUser.displayName || currentUser.email.split('@')[0];
-  await update(ref(db, 'invites/' + code), { status: 'joined', guestUid: currentUser.uid, guestName });
-  // Wait for gameId
-  onValue(ref(db, 'invites/' + code), (snap) => {
+  await update(ref(db,'invites/'+code), { status:'joined', guestUid:currentUser.uid, guestName });
+  onValue(ref(db,'invites/'+code), snap => {
     if (snap.exists() && snap.val().gameId) {
-      off(ref(db, 'invites/' + code));
-      joinGameAsP2(snap.val().gameId, invData.hostName);
+      off(ref(db,'invites/'+code));
+      startOnlineGame(snap.val().gameId, 1, invData.hostName);
     }
   });
-};
-
-window.cancelInvite = async () => {
+}
+async function cancelInvite() {
   if (MP.inviteRef) { await remove(MP.inviteRef); MP.inviteRef = null; }
-  cleanupMP();
   showScreen('screen-lobby');
-};
+}
 
-// ─── GAME SYNC ────────────────────────────────────────────────────────────────
+// ─── INITIAL GAME STATE ──────────────────────────────────────────────────────
 function buildInitialGameState() {
-  // Re-init game state and return it as plain object
-  initGame();
   return {
-    pts: [0,0], turnNum: 1, turn: 0, pieceStep: 0,
-    pipe: Array(5).fill(null).map(() => ({ p1: null, p2: null })),
-    basket: Array(10).fill(null).map(() => {
-      const t = POOL[Math.floor(Math.random() * POOL.length)];
-      return { name: t.name, z: [...t.z], val: t.val, tier: tierOf(t.val), id: Math.random() };
+    pts:[0,0], turnNum:1, turn:0, pieceStep:0,
+    pipe:Array(5).fill(null).map(()=>({p1:null,p2:null})),
+    basket:Array(10).fill(null).map(()=>{
+      const t = POOL[Math.floor(Math.random()*POOL.length)];
+      return { name:t.name, z:[...t.z], val:t.val, tier:tierOf(t.val), id:Math.random() };
     }),
-    log: [], over: false, firstTurnDone: [false, false], selected: -1
+    log:[], over:false, firstTurnDone:[false,false], selected:-1
   };
 }
 
+// ─── START ONLINE GAME ───────────────────────────────────────────────────────
 function startOnlineGame(gameId, myIndex, opponentName) {
-  MP.isOnline = true;
-  MP.gameId = gameId;
-  MP.myIndex = myIndex;
-  MP.opponentName = opponentName;
-  MP.gameRef = ref(db, 'games/' + gameId + '/state');
+  MP.isOnline      = true;
+  MP.gameId        = gameId;
+  MP.myIndex       = myIndex;
+  MP.opponentName  = opponentName;
+  MP.gameRef       = ref(db,'games/'+gameId+'/state');
+  MP.lastSavedHash = null;
 
-  // Show game screen
-  document.getElementById('screen-quickmatch').classList.remove('show');
-  document.getElementById('screen-invite').classList.remove('show');
+  // Save for reconnect
+  set(ref(db,'activeGame/'+currentUser.uid), { gameId, myIndex, opponentName });
+
+  // Show game UI
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
   document.getElementById('app').style.display = '';
-  const mpBar = document.getElementById('mp-bar');
-  mpBar.classList.add('show');
+  document.getElementById('mp-bar').classList.add('show');
   document.getElementById('mp-bar-name').textContent = 'VS ' + opponentName;
 
-  // Aggiorna i nomi nel scoreboard
-  const myName = currentUser.displayName || currentUser.email.split('@')[0];
-  const p1name = myIndex === 0 ? myName : opponentName;
-  const p2name = myIndex === 1 ? myName : opponentName;
-  document.getElementById('sc1').querySelector('.sc-label').textContent = p1name;
-  document.getElementById('sc2').querySelector('.sc-label').textContent = p2name;
+  // Player name labels
+  const myName  = currentUser.displayName || currentUser.email.split('@')[0];
+  const p1label = myIndex === 0 ? myName : opponentName;
+  const p2label = myIndex === 1 ? myName : opponentName;
+  document.getElementById('sc1').querySelector('.sc-label').textContent = p1label;
+  document.getElementById('sc2').querySelector('.sc-label').textContent = p2label;
 
-  // Carica lo stato iniziale dal server (NON chiamare initGame)
-  get(MP.gameRef).then(snap => {
-    if (snap.exists()) {
-      const state = snap.val();
-      Object.assign(G, state);
-      G.selected = -1;
-      renderAll();
-    }
-  });
+  // Replace "Nuova partita" with "Termina Partita"
+  const btnReset = document.getElementById('btn-reset');
+  if (btnReset) {
+    btnReset.textContent = 'Termina Partita';
+    btnReset.style.color = '#ff6b47';
+    btnReset.style.borderColor = 'rgba(255,107,71,0.4)';
+  }
 
-  // Ascolta aggiornamenti in tempo reale dall'avversario
-  // Usa un flag per ignorare i propri aggiornamenti appena salvati
-  MP.lastSavedState = null;
-  onValue(MP.gameRef, (snap) => {
+  // Presence heartbeat every 20s
+  MP.presenceRef = ref(db,'games/'+gameId+'/presence/'+currentUser.uid);
+  set(MP.presenceRef, Date.now());
+  if (MP.heartbeatInterval) clearInterval(MP.heartbeatInterval);
+  MP.heartbeatInterval = setInterval(() => set(MP.presenceRef, Date.now()), 20000);
+
+  // Listen to game state — single source of truth
+  onValue(MP.gameRef, snap => {
     if (!snap.exists()) return;
     const state = snap.val();
-    // Ignora se è un echo della nostra ultima mossa
-    if (MP.lastSavedState && JSON.stringify(state) === MP.lastSavedState) return;
+    const hash  = JSON.stringify(state);
+    if (hash === MP.lastSavedHash) return; // skip echo of own move
+    MP.lastSavedHash = null;
     Object.assign(G, state);
     G.selected = -1;
     renderAll();
     if (state.over) {
-      setTimeout(() => {
-        updateStats(state);
-        showWinner();
-      }, 400);
+      clearTurnTimer();
+      setTimeout(() => { updateEloStats(state); showWinner(); }, 400);
+    } else {
+      startTurnTimer();
     }
   });
-}
 
-function cleanupMP() {
-  if (MP.gameRef) { off(MP.gameRef); MP.gameRef = null; }
-  MP.isOnline = false;
-  MP.gameId = null;
-  document.getElementById('mp-bar').classList.remove('show');
-  document.getElementById('app').style.display = 'none';
-}
-
-async function updateStats(state) {
-  if (!currentUser || !MP.isOnline) return;
-  const myPts = state.pts[MP.myIndex];
-  const opPts = state.pts[1 - MP.myIndex];
-  const won = myPts > opPts;
-  const snap = await get(ref(db, 'users/' + currentUser.uid));
-  if (!snap.exists()) return;
-  const d = snap.val();
-  const oldElo = d.elo || 1000;
-  const k = 32;
-  const expected = 1 / (1 + Math.pow(10, (1000 - oldElo) / 400));
-  const newElo = Math.round(oldElo + k * ((won ? 1 : 0) - expected));
-  await update(ref(db, 'users/' + currentUser.uid), {
-    played: (d.played || 0) + 1,
-    wins: (d.wins || 0) + (won ? 1 : 0),
-    losses: (d.losses || 0) + (won ? 0 : 1),
-    elo: newElo
+  // Watch opponent presence for disconnection
+  const presAllRef = ref(db,'games/'+gameId+'/presence');
+  onValue(presAllRef, snap => {
+    if (!snap.exists()) return;
+    const presence = snap.val();
+    const now = Date.now();
+    Object.entries(presence).forEach(([uid, ts]) => {
+      if (uid === currentUser.uid) return;
+      const age = now - (ts || 0);
+      const dot    = document.getElementById('mp-dot');
+      const status = document.getElementById('mp-bar-status');
+      if (age > ABANDON_MS) {
+        handleOpponentAbandoned();
+      } else if (age > 30000) {
+        if (dot) dot.classList.add('off');
+        if (status) status.textContent = 'Avversario disconnesso...';
+        if (!MP.disconnectTimer)
+          MP.disconnectTimer = setTimeout(handleOpponentAbandoned, ABANDON_MS - age);
+      } else {
+        if (dot) dot.classList.remove('off');
+        if (status) status.textContent = 'Connesso';
+        if (MP.disconnectTimer) { clearTimeout(MP.disconnectTimer); MP.disconnectTimer = null; }
+      }
+    });
   });
 }
 
-// ─── INTERCEPT GAME ACTIONS ───────────────────────────────────────────────────
+// ─── TURN TIMER ──────────────────────────────────────────────────────────────
+function startTurnTimer() {
+  clearTurnTimer();
+  if (G.over) return;
+  MP.turnTimerEnd = Date.now() + TURN_TIMEOUT_MS;
+  // Show countdown in mp-bar
+  const statusEl = document.getElementById('mp-bar-status');
+  MP.turnTimer = setInterval(() => {
+    const rem = Math.max(0, MP.turnTimerEnd - Date.now());
+    const sec = Math.ceil(rem / 1000);
+    if (statusEl) {
+      if (G.turn === MP.myIndex) {
+        statusEl.textContent = 'Il tuo turno — ' + sec + 's';
+        statusEl.style.color = sec <= 10 ? '#ff6b47' : '';
+      } else {
+        statusEl.textContent = 'Turno avversario — ' + sec + 's';
+        statusEl.style.color = '';
+      }
+    }
+    if (rem <= 0) {
+      clearTurnTimer();
+      if (G.turn === MP.myIndex && !G.over) autoPlayWorstCard();
+    }
+  }, 500);
+}
+function clearTurnTimer() {
+  if (MP.turnTimer) { clearInterval(MP.turnTimer); MP.turnTimer = null; }
+  const statusEl = document.getElementById('mp-bar-status');
+  if (statusEl) { statusEl.textContent = 'Connesso'; statusEl.style.color = ''; }
+}
+function autoPlayWorstCard() {
+  // Pick card with lowest total (z sum + val), break ties by val
+  let worstIdx   = 0;
+  let worstScore = Infinity;
+  G.basket.forEach((p, i) => {
+    const score = (p.z[0]+p.z[1]+p.z[2]) + (p.val||0);
+    if (score < worstScore) { worstScore = score; worstIdx = i; }
+  });
+  G.selected = worstIdx;
+  doInsert();
+}
+
+// ─── FORFEIT / ABANDON ───────────────────────────────────────────────────────
+async function forfeitGame() {
+  if (!MP.isOnline || !MP.gameId) return;
+  const ok = confirm('Abbandonare la partita? La vittoria verrà assegnata al tuo avversario.');
+  if (!ok) return;
+  await applyGameOver(false);
+}
+async function handleOpponentAbandoned() {
+  if (!MP.gameId || G.over) return;
+  clearTurnTimer();
+  if (MP.disconnectTimer) { clearTimeout(MP.disconnectTimer); MP.disconnectTimer = null; }
+  await applyGameOver(true);
+}
+async function applyGameOver(weWin) {
+  if (G.over) return;
+  clearTurnTimer();
+  const pts = [...G.pts];
+  if (weWin) { pts[MP.myIndex] = SETTINGS.winPts; pts[1-MP.myIndex] = 0; }
+  else       { pts[1-MP.myIndex] = SETTINGS.winPts; pts[MP.myIndex] = 0; }
+  const finalState = { ...G, pts, over:true, selected:-1 };
+  MP.lastSavedHash = JSON.stringify(finalState);
+  await set(MP.gameRef, finalState);
+  await update(ref(db,'games/'+MP.gameId), { status:'finished' });
+  Object.assign(G, finalState);
+  await updateEloStats(finalState);
+  renderAll();
+  showWinner();
+}
+
+// ─── CLEANUP ─────────────────────────────────────────────────────────────────
+async function cleanupMP(returnToLobby = true) {
+  clearTurnTimer();
+  if (MP.heartbeatInterval) { clearInterval(MP.heartbeatInterval); MP.heartbeatInterval = null; }
+  if (MP.disconnectTimer)   { clearTimeout(MP.disconnectTimer);    MP.disconnectTimer   = null; }
+  if (MP.gameRef)   { off(MP.gameRef); MP.gameRef = null; }
+  if (MP.inviteRef) { await remove(MP.inviteRef); MP.inviteRef = null; }
+  if (MP.queueRef)  { await remove(MP.queueRef);  MP.queueRef  = null; }
+  if (currentUser)  await remove(ref(db,'activeGame/'+currentUser.uid));
+  MP.isOnline = false;
+  MP.gameId   = null;
+  const btnReset = document.getElementById('btn-reset');
+  if (btnReset) { btnReset.textContent='Nuova partita'; btnReset.style.color=''; btnReset.style.borderColor=''; }
+  document.getElementById('mp-bar').classList.remove('show');
+  document.getElementById('app').style.display = 'none';
+  if (returnToLobby && currentUser) { loadLeaderboard(); showScreen('screen-lobby'); loadLobby(currentUser); }
+}
+
+// ─── ELO UPDATE ──────────────────────────────────────────────────────────────
+async function updateEloStats(state) {
+  if (!currentUser) return;
+  const won  = state.pts[MP.myIndex] >= SETTINGS.winPts || state.pts[MP.myIndex] > state.pts[1-MP.myIndex];
+  const snap = await get(ref(db,'users/'+currentUser.uid));
+  if (!snap.exists()) return;
+  const d      = snap.val();
+  const oldElo = d.elo || 1000;
+  const newElo = Math.round(oldElo + 32*((won?1:0) - 1/(1+Math.pow(10,(1000-oldElo)/400))));
+  await update(ref(db,'users/'+currentUser.uid), {
+    played:(d.played||0)+1, wins:(d.wins||0)+(won?1:0), losses:(d.losses||0)+(won?0:1), elo:newElo
+  });
+}
+
+// ─── INTERCEPT DOINSERT ──────────────────────────────────────────────────────
 const _origDoInsert = doInsert;
 window.doInsert = function() {
   if (!MP.isOnline) { _origDoInsert(); return; }
   if (G.selected < 0 || G.over) return;
-  if (G.turn !== MP.myIndex) return; // Non il tuo turno
-  // Esegui la mossa localmente
-  _origDoInsert();
-  // Salva lo stato su Firebase — l'avversario lo riceverà via onValue
+  if (G.turn !== MP.myIndex) return; // not your turn
+  _origDoInsert(); // apply locally
+  // Push to Firebase — opponent receives via onValue
   const stateToSave = {
-    pts: G.pts, turnNum: G.turnNum, turn: G.turn, pieceStep: G.pieceStep,
-    pipe: G.pipe, basket: G.basket, log: G.log, over: G.over,
-    firstTurnDone: G.firstTurnDone, selected: -1
+    pts:G.pts, turnNum:G.turnNum, turn:G.turn, pieceStep:G.pieceStep,
+    pipe:G.pipe, basket:G.basket, log:G.log, over:G.over,
+    firstTurnDone:G.firstTurnDone, selected:-1
   };
-  // Traccia l'ultimo stato salvato per evitare di riceverlo come echo
-  MP.lastSavedState = JSON.stringify(stateToSave);
+  MP.lastSavedHash = JSON.stringify(stateToSave);
   set(MP.gameRef, stateToSave);
 };
 
 const _origResetGame = resetGame;
 window.resetGame = function() {
-  if (MP.isOnline) {
-    cleanupMP();
-    showScreen('screen-lobby');
-    loadLobby(currentUser);
-  } else {
-    _origResetGame();
-  }
+  if (MP.isOnline) forfeitGame();
+  else _origResetGame();
 };
 
-// ─── LOCAL PLAY ───────────────────────────────────────────────────────────────
-window.playLocal = () => {
+// ─── LOCAL PLAY ──────────────────────────────────────────────────────────────
+function playLocal() {
   MP.isOnline = false;
-  document.getElementById('screen-lobby').classList.remove('show');
-  document.getElementById('screen-auth').classList.remove('show');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
   document.getElementById('app').style.display = '';
   initGame();
-};
+}
 
-// Disable insert button when not your turn in online mode
+// Override renderAll for online button state + player names
 const _origRenderAll = renderAll;
 window.renderAll = function() {
   _origRenderAll();
-  if (MP.isOnline) {
-    const btn = document.getElementById('btn-ins');
-    if (btn && G.turn !== MP.myIndex && !G.over) {
-      btn.disabled = true;
-      btn.textContent = 'Turno avversario...';
-    } else if (btn) {
-      btn.textContent = 'Gioca Carta';
-    }
+  if (!MP.isOnline) return;
+  // Update button
+  const btn = document.getElementById('btn-ins');
+  if (btn) {
+    if (G.over)                      { btn.disabled=true;  btn.textContent='Partita terminata'; }
+    else if (G.turn !== MP.myIndex)  { btn.disabled=true;  btn.textContent='Turno avversario...'; }
+    else { btn.disabled=(G.selected<0); btn.textContent='Gioca Carta'; }
+  }
+  // Update player name labels
+  if (currentUser) {
+    const myName  = currentUser.displayName || currentUser.email.split('@')[0];
+    const p1label = MP.myIndex===0 ? myName : MP.opponentName;
+    const p2label = MP.myIndex===1 ? myName : MP.opponentName;
+    const sc1 = document.getElementById('sc1')?.querySelector('.sc-label');
+    const sc2 = document.getElementById('sc2')?.querySelector('.sc-label');
+    if (sc1) sc1.textContent = p1label;
+    if (sc2) sc2.textContent = p2label;
   }
 };
 
-
-// ─── EXPOSE TO WINDOW (for static HTML onclick handlers) ─────────────────────
-// Settings and in-game buttons use onclick= in static HTML — expose via window
-window.switchTab = switchTab;
+// ─── EXPOSE TO WINDOW ────────────────────────────────────────────────────────
+window.switchToRegister = switchToRegister;
+window.switchToLogin    = switchToLogin;
+window.authLogin        = authLogin;
+window.authRegister     = authRegister;
+window.authGoogle       = authGoogle;
+window.authMicrosoft    = authMicrosoft;
+window.authLogout       = authLogout;
+window.showQuickMatch   = showQuickMatch;
+window.cancelQuickMatch = cancelQuickMatch;
+window.showInvite       = showInvite;
+window.copyCode         = copyCode;
+window.joinByCode       = joinByCode;
+window.cancelInvite     = cancelInvite;
+window.playLocal        = playLocal;
+window.switchTab        = switchTab;
 window.resetPieceValues = resetPieceValues;
-window.closeSettings = closeSettings;
-window.applySettings = applySettings;
-window.sendChat = () => {
-  const input = document.getElementById('chat-input');
-  if (!input) return;
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  // For now just add locally (chat is a future feature)
-};
+window.closeSettings    = closeSettings;
+window.applySettings    = applySettings;
 
 // ─── EVENT LISTENERS ─────────────────────────────────────────────────────────
-function bindEl(id, fn) {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('click', fn);
-}
-
-bindEl('btn-auth-login',     () => authLogin());
-bindEl('btn-auth-register',  () => authRegister());
-bindEl('btn-auth-google',    () => authGoogle());
-bindEl('btn-auth-microsoft', () => authMicrosoft());
-bindEl('btn-switch-register',() => switchToRegister());
-bindEl('btn-switch-login',   () => switchToLogin());
-bindEl('btn-logout',         () => authLogout());
-bindEl('btn-quickmatch',     () => showQuickMatch());
-bindEl('btn-invite',         () => showInvite());
-bindEl('btn-local',          () => playLocal());
-bindEl('btn-cancel-qm',      () => cancelQuickMatch());
-bindEl('invite-code',        () => copyCode());
-bindEl('btn-join-code',      () => joinByCode());
-bindEl('btn-cancel-invite',  () => cancelInvite());
-bindEl('btn-ins',            () => doInsert());
-bindEl('btn-reset',          () => resetGame());
-bindEl('btn-settings-open',  () => openSettings());
-
-// Apply/cancel settings buttons (rendered dynamically, use delegation)
+function bindEl(id, fn) { const el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
+bindEl('btn-auth-login',      authLogin);
+bindEl('btn-auth-register',   authRegister);
+bindEl('btn-auth-google',     authGoogle);
+bindEl('btn-auth-microsoft',  authMicrosoft);
+bindEl('btn-switch-register', switchToRegister);
+bindEl('btn-switch-login',    switchToLogin);
+bindEl('btn-logout',          authLogout);
+bindEl('btn-quickmatch',      showQuickMatch);
+bindEl('btn-invite',          showInvite);
+bindEl('btn-local',           playLocal);
+bindEl('btn-cancel-qm',       cancelQuickMatch);
+bindEl('invite-code',         copyCode);
+bindEl('btn-join-code',       joinByCode);
+bindEl('btn-cancel-invite',   cancelInvite);
+bindEl('btn-ins',             () => doInsert());
+bindEl('btn-reset',           () => resetGame());
+bindEl('btn-settings-open',   openSettings);
 document.addEventListener('click', e => {
-  if (e.target.classList.contains('btn-apply')) applySettings();
+  if (e.target.classList.contains('btn-apply'))  applySettings();
   if (e.target.classList.contains('btn-cancel')) closeSettings();
-  if (e.target.id === 'btn-apply') applySettings();
 });
-
-// Join code input — Enter key
-const joinInput = document.getElementById('join-code-input');
-if (joinInput) joinInput.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
-
-// Auth inputs — Enter key
-document.getElementById('auth-password')?.addEventListener('keydown', e => { if (e.key === 'Enter') authLogin(); });
-
+document.getElementById('join-code-input')?.addEventListener('keydown', e => { if(e.key==='Enter') joinByCode(); });
+document.getElementById('auth-password')?.addEventListener('keydown',   e => { if(e.key==='Enter') authLogin(); });
+window.addEventListener('beforeunload', () => { if(MP.presenceRef) set(MP.presenceRef, 0); });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('app').style.display = 'none';
-
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
