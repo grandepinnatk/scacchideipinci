@@ -2,14 +2,15 @@
 
 import { auth, db }           from './firebase.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-         signInWithPopup, GoogleAuthProvider, OAuthProvider,
+         signInWithPopup, signInWithRedirect, getRedirectResult,
+         GoogleAuthProvider, OAuthProvider,
          onAuthStateChanged, signOut, updateProfile }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, query, orderByChild, limitToLast }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { setCurrentUser, MP } from './shared.js';
 let currentUser = null; // local mirror
-import { initGame, renderAll } from './game.js';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame } from './matchmaking.js';
@@ -62,16 +63,31 @@ export async function authRegister() {
   } catch(e) { setAuthErr(firebaseErrMsg(e.code)); }
 }
 export async function authGoogle() {
+  const provider = new GoogleAuthProvider();
   try {
-    const cred = await signInWithPopup(auth, new GoogleAuthProvider());
+    const cred = await signInWithPopup(auth, provider);
     await ensureUserProfile(cred.user);
-  } catch(e) { if (e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
+  } catch(e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+      // Fallback: redirect se il popup è bloccato
+      await signInWithRedirect(auth, provider);
+    } else if (e.code !== 'auth/cancelled-popup-request') {
+      setAuthErr(firebaseErrMsg(e.code));
+    }
+  }
 }
 export async function authMicrosoft() {
+  const provider = new OAuthProvider('microsoft.com');
   try {
-    const cred = await signInWithPopup(auth, new OAuthProvider('microsoft.com'));
+    const cred = await signInWithPopup(auth, provider);
     await ensureUserProfile(cred.user);
-  } catch(e) { if (e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
+  } catch(e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+      await signInWithRedirect(auth, provider);
+    } else if (e.code !== 'auth/cancelled-popup-request') {
+      setAuthErr(firebaseErrMsg(e.code));
+    }
+  }
 }
 export async function authLogout() {
   await cleanupMP(false);
@@ -189,6 +205,15 @@ initGame(); // populate G with valid structure before any render
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('app').style.display = 'none';
 initGame();
+
+// ─── GESTIONE REDIRECT OAUTH (ritorno da Google/Microsoft redirect) ─────────
+getRedirectResult(auth).then(async result => {
+  if (result && result.user) {
+    await ensureUserProfile(result.user);
+  }
+}).catch(e => {
+  if (e.code && e.code !== 'auth/no-current-user') setAuthErr(firebaseErrMsg(e.code));
+});
 
 // ─── AUTH STATE ───────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
