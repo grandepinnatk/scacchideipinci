@@ -964,7 +964,7 @@
     <div class="win-icon">🏆</div>
     <div class="win-title" id="wtitle"></div>
     <div class="win-score" id="wscore"></div>
-    <button class="win-btn" onclick="resetGame()">Nuova partita</button>
+    <button class="win-btn" id="btn-win-action">Nuova partita</button>
   </div>
 </div>
 
@@ -1187,7 +1187,7 @@ async function createGame(p1uid, p2uid, p2name, p2queueKey) {
     p1:{ uid:p1uid, name:p1name }, p2:{ uid:p2uid, name:p2name },
     state, createdAt:Date.now(), status:'playing',
     turnDeadline: Date.now()+TURN_TIMEOUT_MS,
-    presence:{ [p1uid]:Date.now(), [p2uid]:0 }
+    presence:{ [p1uid]:Date.now(), [p2uid]:Date.now() }
   });
   await set(ref(db,'matchmaking/games/'+p2uid), { gameId, opponentName:p1name });
   startOnlineGame(gameId, 0, p2name);
@@ -1218,7 +1218,7 @@ async function showInvite() {
         p1:{ uid:currentUser.uid, name:p1name }, p2:{ uid:data.guestUid, name:data.guestName },
         state, createdAt:Date.now(), status:'playing',
         turnDeadline:Date.now()+TURN_TIMEOUT_MS,
-        presence:{ [currentUser.uid]:Date.now(), [data.guestUid]:0 }
+        presence:{ [currentUser.uid]:Date.now(), [data.guestUid]:Date.now() }
       });
       await update(MP.inviteRef, { gameId });
       startOnlineGame(gameId, 0, data.guestName);
@@ -1320,6 +1320,7 @@ function startOnlineGame(gameId, myIndex, opponentName) {
   });
 
   // Listen to game state — single source of truth
+  MP.eloUpdated = false;
   onValue(MP.gameRef, snap => {
     if (!snap.exists()) return;
     const state = snap.val();
@@ -1328,24 +1329,32 @@ function startOnlineGame(gameId, myIndex, opponentName) {
     renderAll();
     if (state.over) {
       clearTurnTimer();
-      setTimeout(async () => {
-        await updateEloStats(state);
-        showWinner();
-      }, 400);
+      if (!MP.eloUpdated) {
+        MP.eloUpdated = true;
+        setTimeout(async () => {
+          await updateEloStats(state);
+          showWinner();
+        }, 400);
+      }
     } else {
       startTurnTimer();
     }
   });
 
   // Watch opponent presence for disconnection
+  // Use a grace period: don't check disconnection for the first 60s of the game
+  MP.gameStartTime = Date.now();
   const presAllRef = ref(db,'games/'+gameId+'/presence');
   onValue(presAllRef, snap => {
     if (!snap.exists()) return;
     const presence = snap.val();
     const now = Date.now();
+    // Grace period: ignore disconnection checks for first 60 seconds
+    if (now - MP.gameStartTime < 60000) return;
     Object.entries(presence).forEach(([uid, ts]) => {
       if (uid === currentUser.uid) return;
-      const age = now - (ts || 0);
+      if (!ts || ts === 0) return; // opponent hasn't connected yet
+      const age = now - ts;
       const dot    = document.getElementById('mp-dot');
       const status = document.getElementById('mp-bar-status');
       if (age > ABANDON_MS) {
@@ -1577,6 +1586,7 @@ bindEl('btn-join-code',       joinByCode);
 bindEl('btn-cancel-invite',   cancelInvite);
 bindEl('btn-ins',             () => doInsert());
 bindEl('btn-reset',           () => resetGame());
+bindEl('btn-win-action',      () => resetGame());
 bindEl('btn-settings-open',   openSettings);
 document.addEventListener('click', e => {
   if (e.target.classList.contains('btn-apply'))  applySettings();
@@ -1906,7 +1916,7 @@ function showWinner() {
   }
   score.textContent = `Punteggio finale: ${wp} – ${lp}`;
   // In online mode change button label to "Torna alla lobby"
-  const winBtn = document.querySelector('#overlay .win-btn');
+  const winBtn = document.getElementById('btn-win-action');
   if (winBtn) winBtn.textContent = MP.isOnline ? 'Torna alla lobby' : 'Nuova partita';
   document.getElementById('overlay').classList.add('show');
 }
