@@ -1160,66 +1160,81 @@ async function showQuickMatch() {
   document.getElementById('qm-status').textContent = 'Cercando un avversario';
   const myName = currentUser.displayName || currentUser.email.split('@')[0];
 
-  // Write myself into the queue
+  // Scrivo me stesso nella coda
   MP.queueRef = ref(db, 'matchmaking/queue/' + currentUser.uid);
   await set(MP.queueRef, { uid: currentUser.uid, displayName: myName, joinedAt: Date.now() });
   MP.isInQueue = true;
 
-  // Watch the queue: if I see another player, I become P1 and create the game
-  const queueRef = ref(db, 'matchmaking/queue');
-  MP.queueWatchRef = queueRef;
-  onValue(queueRef, async snap => {
+  // Ascolto il mio slot di notifica — se qualcuno crea una partita per me, sono P2
+  const mySlot = ref(db, 'matchmaking/notify/' + currentUser.uid);
+  MP.myGameWatchRef = mySlot;
+  onValue(mySlot, async snap => {
     if (!snap.exists() || !MP.isInQueue) return;
-    let oppUid = null, oppName = null, oppKey = null;
+    MP.isInQueue = false;
+    off(mySlot); MP.myGameWatchRef = null;
+    if (MP.queueWatchRef) { off(MP.queueWatchRef); MP.queueWatchRef = null; }
+    const data = snap.val();
+    await remove(mySlot);
+    if (MP.queueRef) { await remove(MP.queueRef); MP.queueRef = null; }
+    await startOnlineGame(data.gameId, 1, data.p1name);
+  });
+
+  // Cerco nella coda un avversario — polling ogni 2 secondi
+  async function tryMatch() {
+    if (!MP.isInQueue) return;
+    const snap = await get(ref(db, 'matchmaking/queue'));
+    if (!snap.exists() || !MP.isInQueue) {
+      if (MP.isInQueue) setTimeout(tryMatch, 2000);
+      return;
+    }
+    let oppUid = null, oppName = null;
     snap.forEach(child => {
       if (!oppUid && child.val().uid !== currentUser.uid) {
-        oppUid = child.val().uid;
-        oppName = child.val().displayName;
-        oppKey  = child.key;
+        oppUid  = child.val().uid;
+        oppName = child.val().displayName || 'Avversario';
       }
     });
-    if (!oppUid) return;
-    // Found opponent — stop watching, remove both from queue, create game
+    if (!oppUid) {
+      setTimeout(tryMatch, 2000);
+      return;
+    }
+    // Trovato avversario — creo la partita
     MP.isInQueue = false;
-    off(queueRef); MP.queueWatchRef = null;
-    await remove(ref(db, 'matchmaking/queue/' + currentUser.uid)); MP.queueRef = null;
-    await remove(ref(db, 'matchmaking/queue/' + oppKey));
+    if (MP.queueWatchRef) { off(MP.queueWatchRef); MP.queueWatchRef = null; }
+    if (MP.myGameWatchRef) { off(MP.myGameWatchRef); MP.myGameWatchRef = null; }
+    if (MP.queueRef) { await remove(MP.queueRef); MP.queueRef = null; }
+    // Rimuovi l'avversario dalla coda
+    await remove(ref(db, 'matchmaking/queue/' + oppUid));
     await createGame(currentUser.uid, oppUid, oppName);
-  });
-
-  // Watch for a game notification sent TO ME by another player (I become P2)
-  const myGameRef = ref(db, 'matchmaking/games/' + currentUser.uid);
-  MP.myGameWatchRef = myGameRef;
-  onValue(myGameRef, async snap => {
-    if (!snap.exists()) return;
-    if (!MP.isInQueue) return; // already handled as P1
-    MP.isInQueue = false;
-    off(myGameRef); MP.myGameWatchRef = null;
-    await remove(myGameRef);
-    const { gameId, opponentName: oppName } = snap.val();
-    await startOnlineGame(gameId, 1, oppName);
-  });
+  }
+  setTimeout(tryMatch, 1000);
 }
 
-async function createGame(p1uid, p2uid, p2name) {
+
+async function createGame(p1uid, p2uid, p2name, p2queueKey) {
   const gameId = push(ref(db,'games')).key;
   const p1name = currentUser.displayName || currentUser.email.split('@')[0];
   const state  = buildInitialGameState();
+  // Scrivi lo stato della partita
   await set(ref(db,'games/'+gameId), {
     p1:{ uid:p1uid, name:p1name }, p2:{ uid:p2uid, name:p2name },
     state, createdAt:Date.now(), status:'playing',
     turnDeadline: Date.now()+TURN_TIMEOUT_MS,
     presence:{ [p1uid]:Date.now(), [p2uid]:Date.now() }
   });
-  await set(ref(db,'matchmaking/games/'+p2uid), { gameId, opponentName:p1name });
+  // Notifica P2 con il nuovo path /notify/
+  await set(ref(db,'matchmaking/notify/'+p2uid), { gameId, p1name, p2name });
+  // Avvia la partita per P1
   await startOnlineGame(gameId, 0, p2name);
 }
+
 
 async function cancelQuickMatch() {
   MP.isInQueue = false;
   if (MP.queueWatchRef)  { off(MP.queueWatchRef);  MP.queueWatchRef  = null; }
   if (MP.myGameWatchRef) { off(MP.myGameWatchRef);  MP.myGameWatchRef = null; }
   if (MP.queueRef)       { await remove(MP.queueRef); MP.queueRef     = null; }
+  await remove(ref(db, 'matchmaking/notify/' + currentUser.uid));
   showScreen('screen-lobby');
 }
 
