@@ -1,20 +1,20 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1773702971';
+import { auth, db }           from './firebase.js?v=1773703449';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
          onAuthStateChanged, signOut, updateProfile }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { ref, set, get, update, query, orderByChild, limitToLast }
+import { ref, set, get, update, remove, query, orderByChild, limitToLast }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1773702971';
+import { setCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1773703449';
 let currentUser = null; // local mirror
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1773702971';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1773703449';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1773702971';
+         startOnlineGame } from './matchmaking.js?v=1773703449';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
