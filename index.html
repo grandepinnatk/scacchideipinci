@@ -1016,6 +1016,9 @@ let MP = {
   gameRef: null,
   presenceRef: null,
   queueRef: null,
+  queueWatchRef: null,
+  myGameWatchRef: null,
+  isInQueue: false,
   inviteRef: null,
   heartbeatInterval: null,
   disconnectTimer: null,
@@ -1155,36 +1158,50 @@ onAuthStateChanged(auth, async (user) => {
 async function showQuickMatch() {
   showScreen('screen-quickmatch');
   document.getElementById('qm-status').textContent = 'Cercando un avversario';
-  const queueSnap = await get(ref(db,'matchmaking/queue'));
-  let found = false;
-  if (queueSnap.exists()) {
-    for (const child of Object.values(queueSnap.val() || {})) {
-      if (!found && child.uid !== currentUser.uid) {
-        found = true;
-        // Find the key for this child
-        let childKey = null;
-        queueSnap.forEach(c => { if (c.val().uid === child.uid) childKey = c.key; });
-        await createGame(currentUser.uid, child.uid, child.displayName, childKey);
-        break;
-      }
-    }
-  }
-  if (!found) {
-    const name = currentUser.displayName || currentUser.email.split('@')[0];
-    MP.queueRef = ref(db,'matchmaking/queue/'+currentUser.uid);
-    await set(MP.queueRef, { uid:currentUser.uid, displayName:name, joinedAt:Date.now() });
-    const waitRef = ref(db,'matchmaking/games/'+currentUser.uid);
-    onValue(waitRef, snap => {
-      if (snap.exists()) {
-        off(waitRef); remove(waitRef);
-        const { gameId, opponentName } = snap.val();
-        startOnlineGame(gameId, 1, opponentName);
+  const myName = currentUser.displayName || currentUser.email.split('@')[0];
+
+  // Write myself into the queue
+  MP.queueRef = ref(db, 'matchmaking/queue/' + currentUser.uid);
+  await set(MP.queueRef, { uid: currentUser.uid, displayName: myName, joinedAt: Date.now() });
+  MP.isInQueue = true;
+
+  // Watch the queue: if I see another player, I become P1 and create the game
+  const queueRef = ref(db, 'matchmaking/queue');
+  MP.queueWatchRef = queueRef;
+  onValue(queueRef, async snap => {
+    if (!snap.exists() || !MP.isInQueue) return;
+    let oppUid = null, oppName = null, oppKey = null;
+    snap.forEach(child => {
+      if (!oppUid && child.val().uid !== currentUser.uid) {
+        oppUid = child.val().uid;
+        oppName = child.val().displayName;
+        oppKey  = child.key;
       }
     });
-  }
+    if (!oppUid) return;
+    // Found opponent — stop watching, remove both from queue, create game
+    MP.isInQueue = false;
+    off(queueRef); MP.queueWatchRef = null;
+    await remove(ref(db, 'matchmaking/queue/' + currentUser.uid)); MP.queueRef = null;
+    await remove(ref(db, 'matchmaking/queue/' + oppKey));
+    await createGame(currentUser.uid, oppUid, oppName);
+  });
+
+  // Watch for a game notification sent TO ME by another player (I become P2)
+  const myGameRef = ref(db, 'matchmaking/games/' + currentUser.uid);
+  MP.myGameWatchRef = myGameRef;
+  onValue(myGameRef, async snap => {
+    if (!snap.exists()) return;
+    if (!MP.isInQueue) return; // already handled as P1
+    MP.isInQueue = false;
+    off(myGameRef); MP.myGameWatchRef = null;
+    await remove(myGameRef);
+    const { gameId, opponentName: oppName } = snap.val();
+    await startOnlineGame(gameId, 1, oppName);
+  });
 }
-async function createGame(p1uid, p2uid, p2name, p2queueKey) {
-  await remove(ref(db,'matchmaking/queue/'+p2queueKey));
+
+async function createGame(p1uid, p2uid, p2name) {
   const gameId = push(ref(db,'games')).key;
   const p1name = currentUser.displayName || currentUser.email.split('@')[0];
   const state  = buildInitialGameState();
@@ -1197,8 +1214,12 @@ async function createGame(p1uid, p2uid, p2name, p2queueKey) {
   await set(ref(db,'matchmaking/games/'+p2uid), { gameId, opponentName:p1name });
   await startOnlineGame(gameId, 0, p2name);
 }
+
 async function cancelQuickMatch() {
-  if (MP.queueRef) { await remove(MP.queueRef); MP.queueRef = null; }
+  MP.isInQueue = false;
+  if (MP.queueWatchRef)  { off(MP.queueWatchRef);  MP.queueWatchRef  = null; }
+  if (MP.myGameWatchRef) { off(MP.myGameWatchRef);  MP.myGameWatchRef = null; }
+  if (MP.queueRef)       { await remove(MP.queueRef); MP.queueRef     = null; }
   showScreen('screen-lobby');
 }
 
@@ -1510,9 +1531,12 @@ async function cleanupMP(returnToLobby = true) {
   clearTurnTimer();
   if (MP.heartbeatInterval) { clearInterval(MP.heartbeatInterval); MP.heartbeatInterval = null; }
   if (MP.disconnectTimer)   { clearTimeout(MP.disconnectTimer);    MP.disconnectTimer   = null; }
-  if (MP.gameRef)   { off(MP.gameRef); MP.gameRef = null; }
-  if (MP.inviteRef) { await remove(MP.inviteRef); MP.inviteRef = null; }
-  if (MP.queueRef)  { await remove(MP.queueRef);  MP.queueRef  = null; }
+  if (MP.gameRef)        { off(MP.gameRef);           MP.gameRef       = null; }
+  if (MP.queueWatchRef)  { off(MP.queueWatchRef);     MP.queueWatchRef = null; }
+  if (MP.myGameWatchRef) { off(MP.myGameWatchRef);     MP.myGameWatchRef= null; }
+  if (MP.inviteRef)      { await remove(MP.inviteRef); MP.inviteRef     = null; }
+  if (MP.queueRef)       { await remove(MP.queueRef);  MP.queueRef      = null; }
+  MP.isInQueue = false;
   if (currentUser)  await remove(ref(db,'activeGame/'+currentUser.uid));
   MP.isOnline = false;
   MP.gameId   = null;
