@@ -1007,7 +1007,7 @@ let MP = {
   heartbeatInterval: null,
   disconnectTimer: null,
   turnTimer: null,
-  lastSavedHash: null,
+
 };
 const TURN_TIMEOUT_MS = 45000;
 const ABANDON_MS      = 120000;
@@ -1297,12 +1297,10 @@ function startOnlineGame(gameId, myIndex, opponentName) {
   MP.heartbeatInterval = setInterval(() => set(MP.presenceRef, Date.now()), 20000);
 
   // Listen to game state — single source of truth
+  // Always apply state from Firebase (no echo-skip: both players need the initial render)
   onValue(MP.gameRef, snap => {
     if (!snap.exists()) return;
     const state = snap.val();
-    const hash  = JSON.stringify(state);
-    if (hash === MP.lastSavedHash) return; // skip echo of own move
-    MP.lastSavedHash = null;
     Object.assign(G, state);
     G.selected = -1;
     renderAll();
@@ -1405,7 +1403,6 @@ async function applyGameOver(weWin) {
   if (weWin) { pts[MP.myIndex] = SETTINGS.winPts; pts[1-MP.myIndex] = 0; }
   else       { pts[1-MP.myIndex] = SETTINGS.winPts; pts[MP.myIndex] = 0; }
   const finalState = { ...G, pts, over:true, selected:-1 };
-  MP.lastSavedHash = JSON.stringify(finalState);
   await set(MP.gameRef, finalState);
   await update(ref(db,'games/'+MP.gameId), { status:'finished' });
   Object.assign(G, finalState);
@@ -1452,14 +1449,15 @@ window.doInsert = function() {
   if (!MP.isOnline) { _origDoInsert(); return; }
   if (G.selected < 0 || G.over) return;
   if (G.turn !== MP.myIndex) return; // not your turn
-  _origDoInsert(); // apply locally
-  // Push to Firebase — opponent receives via onValue
+  // Apply locally to compute new state
+  _origDoInsert();
+  // Push to Firebase — onValue will echo back to BOTH players (including us)
+  // so both screens update from the same source of truth
   const stateToSave = {
     pts:G.pts, turnNum:G.turnNum, turn:G.turn, pieceStep:G.pieceStep,
     pipe:G.pipe, basket:G.basket, log:G.log, over:G.over,
     firstTurnDone:G.firstTurnDone, selected:-1
   };
-  MP.lastSavedHash = JSON.stringify(stateToSave);
   set(MP.gameRef, stateToSave);
 };
 
