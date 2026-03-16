@@ -1,0 +1,199 @@
+// ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
+
+import { auth, db }           from './firebase.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         signInWithPopup, GoogleAuthProvider, OAuthProvider,
+         onAuthStateChanged, signOut, updateProfile }
+                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { ref, set, get, update, query, orderByChild, limitToLast }
+                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { setCurrentUser, MP } from './shared.js';
+let currentUser = null; // local mirror
+import { initGame, renderAll } from './game.js';
+import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
+         showInvite, cancelInvite, copyCode, joinByCode,
+         forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame } from './matchmaking.js';
+
+// ─── AUTH UI ─────────────────────────────────────────────────────────────────
+export function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('show');
+}
+export function switchToRegister() {
+  document.getElementById('auth-form-login').style.display = 'none';
+  document.getElementById('auth-form-register').style.display = '';
+  document.getElementById('auth-mode-sub').textContent = 'Crea un nuovo account';
+  document.getElementById('auth-err').textContent = '';
+}
+export function switchToLogin() {
+  document.getElementById('auth-form-register').style.display = 'none';
+  document.getElementById('auth-form-login').style.display = '';
+  document.getElementById('auth-mode-sub').textContent = 'Accedi per giocare online';
+  document.getElementById('auth-err').textContent = '';
+}
+export function setAuthErr(msg) { document.getElementById('auth-err').textContent = msg; }
+function firebaseErrMsg(code) {
+  const map = {
+    'auth/email-already-in-use':'Email già in uso','auth/invalid-email':'Email non valida',
+    'auth/weak-password':'Password troppo corta (min 6 caratteri)','auth/wrong-password':'Password errata',
+    'auth/user-not-found':'Nessun account con questa email','auth/invalid-credential':'Credenziali non valide',
+    'auth/popup-closed-by-user':'Login annullato','auth/cancelled-popup-request':'',
+  };
+  return map[code] || 'Errore: ' + code;
+}
+export async function authLogin() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pw    = document.getElementById('auth-password').value;
+  if (!email || !pw) { setAuthErr('Compila tutti i campi'); return; }
+  try { await signInWithEmailAndPassword(auth, email, pw); }
+  catch(e) { setAuthErr(firebaseErrMsg(e.code)); }
+}
+export async function authRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pw    = document.getElementById('reg-password').value;
+  if (!name || !email || !pw) { setAuthErr('Compila tutti i campi'); return; }
+  if (name.length < 2) { setAuthErr('Nome troppo corto'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    await updateProfile(cred.user, { displayName: name });
+    await createUserProfile(cred.user.uid, name);
+  } catch(e) { setAuthErr(firebaseErrMsg(e.code)); }
+}
+export async function authGoogle() {
+  try {
+    const cred = await signInWithPopup(auth, new GoogleAuthProvider());
+    await ensureUserProfile(cred.user);
+  } catch(e) { if (e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
+}
+export async function authMicrosoft() {
+  try {
+    const cred = await signInWithPopup(auth, new OAuthProvider('microsoft.com'));
+    await ensureUserProfile(cred.user);
+  } catch(e) { if (e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
+}
+export async function authLogout() {
+  await cleanupMP(false);
+  await signOut(auth);
+}
+
+// ─── USER PROFILE ────────────────────────────────────────────────────────────
+export async function createUserProfile(uid, displayName) {
+  await set(ref(db,'users/'+uid), { displayName, elo:1000, played:0, wins:0, losses:0, createdAt:Date.now() });
+}
+export async function ensureUserProfile(user) {
+  const snap = await get(ref(db,'users/'+user.uid));
+  if (!snap.exists()) await createUserProfile(user.uid, user.displayName || user.email.split('@')[0]);
+}
+export async function loadLobby(user) {
+  currentUser = user;
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('lobby-username').textContent = name;
+  const av = document.getElementById('lobby-avatar');
+  av.innerHTML = user.photoURL ? `<img src="${user.photoURL}" alt="">` : name[0].toUpperCase();
+  const snap = await get(ref(db,'users/'+user.uid));
+  if (snap.exists()) {
+    const d = snap.val();
+    document.getElementById('stat-played').textContent = d.played || 0;
+    document.getElementById('stat-wins').textContent   = d.wins   || 0;
+    document.getElementById('stat-elo').textContent    = d.elo    || 1000;
+  }
+  // Check for resumable game
+  const activeSnap = await get(ref(db,'activeGame/'+user.uid));
+  if (activeSnap.exists()) {
+    const { gameId, myIndex, opponentName } = activeSnap.val();
+    const statusSnap = await get(ref(db,'games/'+gameId+'/status'));
+    if (statusSnap.exists() && statusSnap.val() === 'playing') {
+      if (confirm('Hai una partita in corso contro ' + opponentName + '. Vuoi riprendere?')) {
+        startOnlineGame(gameId, myIndex, opponentName);
+        return;
+      }
+    }
+    await remove(ref(db,'activeGame/'+user.uid));
+  }
+  loadLeaderboard();
+  showScreen('screen-lobby');
+}
+export async function loadLeaderboard() {
+  const q = query(ref(db,'users'), orderByChild('elo'), limitToLast(10));
+  const snap = await get(q);
+  if (!snap.exists()) return;
+  const users = [];
+  snap.forEach(c => users.push({ uid:c.key, ...c.val() }));
+  users.sort((a,b) => (b.elo||1000)-(a.elo||1000));
+  const tbody = document.getElementById('lb-body');
+  tbody.innerHTML = '';
+  users.forEach((u,i) => {
+    const tr = document.createElement('tr');
+    if (u.uid === currentUser.uid) tr.className = 'lb-me';
+    tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ─── EXPOSE TO WINDOW ────────────────────────────────────────────────────────
+window.switchToRegister = switchToRegister;
+window.confirmForfeit   = confirmForfeit;
+window.cancelForfeit    = cancelForfeit;
+window.switchToLogin    = switchToLogin;
+window.authLogin        = authLogin;
+window.authRegister     = authRegister;
+window.authGoogle       = authGoogle;
+window.authMicrosoft    = authMicrosoft;
+window.authLogout       = authLogout;
+window.showQuickMatch   = showQuickMatch;
+window.cancelQuickMatch = cancelQuickMatch;
+window.showInvite       = showInvite;
+window.copyCode         = copyCode;
+window.joinByCode       = joinByCode;
+window.cancelInvite     = cancelInvite;
+window.playLocal        = playLocal;
+window.switchTab        = switchTab;
+window.resetPieceValues = resetPieceValues;
+window.closeSettings    = closeSettings;
+window.applySettings    = applySettings;
+
+// ─── EVENT LISTENERS ─────────────────────────────────────────────────────────
+function bindEl(id, fn) { const el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
+bindEl('btn-auth-login',      authLogin);
+bindEl('btn-auth-register',   authRegister);
+bindEl('btn-auth-google',     authGoogle);
+bindEl('btn-auth-microsoft',  authMicrosoft);
+bindEl('btn-switch-register', switchToRegister);
+bindEl('btn-switch-login',    switchToLogin);
+bindEl('btn-logout',          authLogout);
+bindEl('btn-quickmatch',      showQuickMatch);
+bindEl('btn-invite',          showInvite);
+bindEl('btn-local',           playLocal);
+bindEl('btn-cancel-qm',       cancelQuickMatch);
+bindEl('invite-code',         copyCode);
+bindEl('btn-join-code',       joinByCode);
+bindEl('btn-cancel-invite',   cancelInvite);
+bindEl('btn-ins',             () => doInsert());
+bindEl('btn-reset',           () => resetGame());
+bindEl('btn-win-action',      () => resetGame());
+bindEl('btn-settings-open',   openSettings);
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('btn-apply'))  applySettings();
+  if (e.target.classList.contains('btn-cancel')) closeSettings();
+});
+document.getElementById('join-code-input')?.addEventListener('keydown', e => { if(e.key==='Enter') joinByCode(); });
+document.getElementById('auth-password')?.addEventListener('keydown',   e => { if(e.key==='Enter') authLogin(); });
+window.addEventListener('beforeunload', () => { if(MP.presenceRef) set(MP.presenceRef, 0); });
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('app').style.display = 'none';
+initGame(); // populate G with valid structure before any render
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('app').style.display = 'none';
+initGame();
+
+// ─── AUTH STATE ───────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  setAuthErr('');
+  currentUser = user; setCurrentUser(user);
+  if (user) { await ensureUserProfile(user); await loadLobby(user); }
+  else { showScreen('screen-auth'); switchToLogin(); }
+});
