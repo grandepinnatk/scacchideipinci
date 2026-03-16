@@ -1020,7 +1020,8 @@ let MP = {
   heartbeatInterval: null,
   disconnectTimer: null,
   turnTimer: null,
-
+  eloUpdated: false,
+  gameStartTime: 0,
 };
 const TURN_TIMEOUT_MS = 45000;
 const ABANDON_MS      = 120000;
@@ -1190,7 +1191,7 @@ async function createGame(p1uid, p2uid, p2name, p2queueKey) {
     presence:{ [p1uid]:Date.now(), [p2uid]:Date.now() }
   });
   await set(ref(db,'matchmaking/games/'+p2uid), { gameId, opponentName:p1name });
-  startOnlineGame(gameId, 0, p2name);
+  await startOnlineGame(gameId, 0, p2name);
 }
 async function cancelQuickMatch() {
   if (MP.queueRef) { await remove(MP.queueRef); MP.queueRef = null; }
@@ -1271,14 +1272,12 @@ function buildInitialGameState() {
 }
 
 // ─── START ONLINE GAME ───────────────────────────────────────────────────────
-function startOnlineGame(gameId, myIndex, opponentName) {
+async function startOnlineGame(gameId, myIndex, opponentName) {
   MP.isOnline      = true;
   MP.gameId        = gameId;
   MP.myIndex       = myIndex;
   MP.opponentName  = opponentName;
   MP.gameRef       = ref(db,'games/'+gameId+'/state');
-  MP.lastSavedHash = null;
-
   // Save for reconnect
   set(ref(db,'activeGame/'+currentUser.uid), { gameId, myIndex, opponentName });
 
@@ -1309,15 +1308,14 @@ function startOnlineGame(gameId, myIndex, opponentName) {
   if (MP.heartbeatInterval) clearInterval(MP.heartbeatInterval);
   MP.heartbeatInterval = setInterval(() => set(MP.presenceRef, Date.now()), 20000);
 
-  // Load initial state immediately (handles case where Firebase already has data)
-  get(MP.gameRef).then(snap => {
-    if (snap.exists()) {
-      Object.assign(G, snap.val());
-      G.selected = -1;
-      renderAll();
-      startTurnTimer();
-    }
-  });
+  // Load initial state — awaited so field renders before onValue fires
+  const initSnap = await get(MP.gameRef);
+  if (initSnap.exists()) {
+    Object.assign(G, initSnap.val());
+    G.selected = -1;
+    renderAll();
+    if (!G.over) startTurnTimer();
+  }
 
   // Listen to game state — single source of truth
   MP.eloUpdated = false;
@@ -1426,6 +1424,8 @@ function showForfeitModal() {
 async function confirmForfeit() {
   document.getElementById('forfeit-modal').classList.remove('show');
   await applyGameOver(false);
+  // Loser leaves immediately; winner sees HAI VINTO via onValue then clicks Torna alla lobby
+  await cleanupMP(true);
 }
 function cancelForfeit() {
   document.getElementById('forfeit-modal').classList.remove('show');
