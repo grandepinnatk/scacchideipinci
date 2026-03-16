@@ -1272,6 +1272,51 @@ function buildInitialGameState() {
 }
 
 // ─── START ONLINE GAME ───────────────────────────────────────────────────────
+
+// ─── NORMALIZE FIREBASE STATE ────────────────────────────────────────────────
+// Firebase serializes arrays as objects with numeric keys {0:..., 1:...}
+// This function converts them back to proper JS arrays
+function normalizeState(state) {
+  if (!state) return state;
+  // Convert basket: object → array
+  if (state.basket && !Array.isArray(state.basket)) {
+    state.basket = Object.values(state.basket);
+  }
+  // Convert basket items: z array
+  if (state.basket) {
+    state.basket = state.basket.map(p => {
+      if (p && p.z && !Array.isArray(p.z)) p.z = Object.values(p.z);
+      return p;
+    });
+  }
+  // Convert pipe: object → array
+  if (state.pipe && !Array.isArray(state.pipe)) {
+    state.pipe = Object.values(state.pipe);
+  }
+  // Convert pipe slots: p1.z and p2.z
+  if (state.pipe) {
+    state.pipe = state.pipe.map(slot => {
+      if (!slot) return { p1: null, p2: null };
+      if (slot.p1 && slot.p1.z && !Array.isArray(slot.p1.z)) slot.p1.z = Object.values(slot.p1.z);
+      if (slot.p2 && slot.p2.z && !Array.isArray(slot.p2.z)) slot.p2.z = Object.values(slot.p2.z);
+      return slot;
+    });
+  }
+  // Convert pts: object → array
+  if (state.pts && !Array.isArray(state.pts)) {
+    state.pts = Object.values(state.pts);
+  }
+  // Convert firstTurnDone: object → array
+  if (state.firstTurnDone && !Array.isArray(state.firstTurnDone)) {
+    state.firstTurnDone = Object.values(state.firstTurnDone);
+  }
+  // Convert log: object → array
+  if (state.log && !Array.isArray(state.log)) {
+    state.log = Object.values(state.log);
+  }
+  return state;
+}
+
 async function startOnlineGame(gameId, myIndex, opponentName) {
   MP.isOnline      = true;
   MP.gameId        = gameId;
@@ -1311,7 +1356,7 @@ async function startOnlineGame(gameId, myIndex, opponentName) {
   // Load initial state — awaited so field renders before onValue fires
   const initSnap = await get(MP.gameRef);
   if (initSnap.exists()) {
-    Object.assign(G, initSnap.val());
+    Object.assign(G, normalizeState(initSnap.val()));
     G.selected = -1;
     renderAll();
     if (!G.over) startTurnTimer();
@@ -1321,7 +1366,7 @@ async function startOnlineGame(gameId, myIndex, opponentName) {
   MP.eloUpdated = false;
   onValue(MP.gameRef, snap => {
     if (!snap.exists()) return;
-    const state = snap.val();
+    const state = normalizeState(snap.val());
     Object.assign(G, state);
     G.selected = -1;
     renderAll();
