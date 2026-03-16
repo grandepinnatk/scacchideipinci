@@ -1353,13 +1353,22 @@ async function startOnlineGame(gameId, myIndex, opponentName) {
   if (MP.heartbeatInterval) clearInterval(MP.heartbeatInterval);
   MP.heartbeatInterval = setInterval(() => set(MP.presenceRef, Date.now()), 20000);
 
+  // Initialize G with valid structure, then overwrite with Firebase data
+  initGame();
   // Load initial state — awaited so field renders before onValue fires
   const initSnap = await get(MP.gameRef);
   if (initSnap.exists()) {
-    Object.assign(G, normalizeState(initSnap.val()));
+    const normalized = normalizeState(initSnap.val());
+    // Merge carefully: only overwrite if arrays are valid
+    if (Array.isArray(normalized.basket) && normalized.basket.length > 0) {
+      Object.assign(G, normalized);
+    }
     G.selected = -1;
     renderAll();
     if (!G.over) startTurnTimer();
+  } else {
+    // Firebase data not ready yet — render local initGame state and wait for onValue
+    renderAll();
   }
 
   // Listen to game state — single source of truth
@@ -1367,7 +1376,10 @@ async function startOnlineGame(gameId, myIndex, opponentName) {
   onValue(MP.gameRef, snap => {
     if (!snap.exists()) return;
     const state = normalizeState(snap.val());
-    Object.assign(G, state);
+    if (state && Array.isArray(state.basket) && state.basket.length > 0 &&
+        Array.isArray(state.pipe) && state.pipe.length > 0) {
+      Object.assign(G, state);
+    }
     G.selected = -1;
     renderAll();
     if (state.over) {
@@ -1570,7 +1582,7 @@ function playLocal() {
 // Override renderAll for online button state + player names
 const _origRenderAll = renderAll;
 window.renderAll = function() {
-  _origRenderAll();
+  try { _origRenderAll(); } catch(e) { console.error('renderAll error:', e); return; }
   if (!MP.isOnline) return;
   // Update button
   const btn = document.getElementById('btn-ins');
@@ -1643,6 +1655,7 @@ window.addEventListener('beforeunload', () => { if(MP.presenceRef) set(MP.presen
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('app').style.display = 'none';
+initGame(); // populate G with valid structure before any render
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
