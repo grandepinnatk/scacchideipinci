@@ -1325,11 +1325,31 @@ function startOnlineGame(gameId, myIndex, opponentName) {
   mpBar.classList.add('show');
   document.getElementById('mp-bar-name').textContent = 'VS ' + opponentName;
 
-  // Listen to game state
+  // Aggiorna i nomi nel scoreboard
+  const myName = currentUser.displayName || currentUser.email.split('@')[0];
+  const p1name = myIndex === 0 ? myName : opponentName;
+  const p2name = myIndex === 1 ? myName : opponentName;
+  document.getElementById('sc1').querySelector('.sc-label').textContent = p1name;
+  document.getElementById('sc2').querySelector('.sc-label').textContent = p2name;
+
+  // Carica lo stato iniziale dal server (NON chiamare initGame)
+  get(MP.gameRef).then(snap => {
+    if (snap.exists()) {
+      const state = snap.val();
+      Object.assign(G, state);
+      G.selected = -1;
+      renderAll();
+    }
+  });
+
+  // Ascolta aggiornamenti in tempo reale dall'avversario
+  // Usa un flag per ignorare i propri aggiornamenti appena salvati
+  MP.lastSavedState = null;
   onValue(MP.gameRef, (snap) => {
     if (!snap.exists()) return;
     const state = snap.val();
-    // Sync state to local G
+    // Ignora se è un echo della nostra ultima mossa
+    if (MP.lastSavedState && JSON.stringify(state) === MP.lastSavedState) return;
     Object.assign(G, state);
     G.selected = -1;
     renderAll();
@@ -1340,8 +1360,6 @@ function startOnlineGame(gameId, myIndex, opponentName) {
       }, 400);
     }
   });
-
-  initGame();
 }
 
 function cleanupMP() {
@@ -1377,13 +1395,17 @@ const _origDoInsert = doInsert;
 window.doInsert = function() {
   if (!MP.isOnline) { _origDoInsert(); return; }
   if (G.selected < 0 || G.over) return;
-  if (G.turn !== MP.myIndex) { return; } // Non il tuo turno
-  // Apply move locally then push to Firebase
+  if (G.turn !== MP.myIndex) return; // Non il tuo turno
+  // Esegui la mossa localmente
   _origDoInsert();
-  // Push updated state to Firebase
-  const stateToSave = { pts: G.pts, turnNum: G.turnNum, turn: G.turn, pieceStep: G.pieceStep,
+  // Salva lo stato su Firebase — l'avversario lo riceverà via onValue
+  const stateToSave = {
+    pts: G.pts, turnNum: G.turnNum, turn: G.turn, pieceStep: G.pieceStep,
     pipe: G.pipe, basket: G.basket, log: G.log, over: G.over,
-    firstTurnDone: G.firstTurnDone, selected: -1 };
+    firstTurnDone: G.firstTurnDone, selected: -1
+  };
+  // Traccia l'ultimo stato salvato per evitare di riceverlo come echo
+  MP.lastSavedState = JSON.stringify(stateToSave);
   set(MP.gameRef, stateToSave);
 };
 
@@ -1815,6 +1837,14 @@ function renderScore() {
   document.getElementById('tnum').textContent = G.turnNum;
   document.getElementById('sc1').classList.toggle('active', G.turn===0 && !G.over);
   document.getElementById('sc2').classList.toggle('active', G.turn===1 && !G.over);
+  // Aggiorna nomi giocatori se in modalità online
+  if (MP.isOnline && currentUser) {
+    const myName = currentUser.displayName || currentUser.email.split('@')[0];
+    const p1name = MP.myIndex === 0 ? myName : MP.opponentName;
+    const p2name = MP.myIndex === 1 ? myName : MP.opponentName;
+    document.getElementById('sc1').querySelector('.sc-label').textContent = p1name;
+    document.getElementById('sc2').querySelector('.sc-label').textContent = p2name;
+  }
 }
 
 function renderBanner() {
@@ -1822,9 +1852,18 @@ function renderBanner() {
     document.getElementById('tbanner').innerHTML = '<span class="lc-gold">Partita conclusa!</span>';
     return;
   }
+  let p1label, p2label;
+  if (MP.isOnline) {
+    const myName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'Tu';
+    p1label = MP.myIndex === 0 ? myName : MP.opponentName;
+    p2label = MP.myIndex === 1 ? myName : MP.opponentName;
+  } else {
+    p1label = 'Giocatore 1';
+    p2label = 'Giocatore 2';
+  }
   const pn = G.turn === 0
-    ? '<span class="hl-p1">Giocatore 1</span>'
-    : '<span class="hl-p2">Giocatore 2</span>';
+    ? `<span class="hl-p1">${p1label}</span>`
+    : `<span class="hl-p2">${p2label}</span>`;
   const step = G.pieceStep + 1;
   const total = G.turnNum === 1 ? 1 : 2;
   document.getElementById('tbanner').innerHTML =
