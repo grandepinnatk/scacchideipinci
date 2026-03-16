@@ -566,15 +566,255 @@
   .piece-edit-input:focus { outline:none; border-color:var(--gold); }
   .piece-edit-input.changed { border-color:rgba(232,160,32,0.5); background:rgba(232,160,32,0.07); }
   .piece-table td { padding:4px 6px; border-top:1px solid var(--border); vertical-align:middle; }
+  /* ── MULTIPLAYER ──────────────────────────────────────── */
+  .mp-screen { display:none; position:fixed; inset:0; background:var(--bg); z-index:200; align-items:center; justify-content:center; flex-direction:column; padding:24px; }
+  .mp-screen.show { display:flex; }
+  .mp-box { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:32px 28px; width:100%; max-width:360px; text-align:center; }
+  .mp-title { font-size:28px; font-weight:bold; margin-bottom:8px; color:var(--text); }
+  .mp-sub { font-size:13px; color:var(--text2); margin-bottom:24px; }
+  .mp-input { width:100%; padding:10px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-size:18px; font-family:'BurbankBig',sans-serif; margin-bottom:12px; text-align:center; }
+  .mp-input:focus { outline:none; border-color:var(--gold); }
+  .mp-btn { width:100%; padding:12px; background:var(--gold); border:none; border-radius:var(--radius); color:var(--bg); font-size:20px; font-weight:bold; cursor:pointer; font-family:'BurbankBig',sans-serif; margin-bottom:8px; transition:opacity 0.15s; }
+  .mp-btn:hover { opacity:0.85; }
+  .mp-btn-sec { width:100%; padding:10px; background:transparent; border:1px solid var(--border2); border-radius:var(--radius); color:var(--text2); font-size:16px; cursor:pointer; font-family:'BurbankBig',sans-serif; transition:background 0.15s; }
+  .mp-btn-sec:hover { background:var(--bg3); }
+  .mp-waiting { font-size:14px; color:var(--text2); margin-top:16px; animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .mp-spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; margin:16px auto; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  /* Connection indicator */
+  .conn-bar { display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--bg2); border-radius:var(--radius); margin-bottom:8px; font-size:12px; color:var(--text2); }
+  .conn-dot { width:8px; height:8px; border-radius:50%; background:var(--text3); flex-shrink:0; }
+  .conn-dot.online { background:#3a9e5f; }
+  .conn-dot.offline { background:#e8593c; animation:pulse 1s infinite; }
+  .conn-name { font-weight:bold; color:var(--text); }
+  .mp-mode-badge { font-size:11px; padding:3px 10px; border-radius:10px; background:rgba(74,158,255,0.15); color:#4a9eff; margin-left:auto; }
+
+  /* Timeout bar */
+  .timeout-bar-wrap { height:4px; background:var(--border); border-radius:2px; margin-bottom:8px; overflow:hidden; display:none; }
+  .timeout-bar-wrap.active { display:block; }
+  .timeout-bar { height:100%; background:var(--gold); border-radius:2px; transition:width 1s linear; }
+  .timeout-bar.warning { background:#e8593c; }
+
+  /* Chat */
+  .chat-panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); margin-top:12px; overflow:hidden; }
+  .chat-msgs { max-height:100px; overflow-y:auto; padding:8px 10px; font-size:12px; font-family:sans-serif; }
+  .chat-msg { margin-bottom:4px; line-height:1.5; }
+  .chat-msg .cm-name { font-weight:bold; }
+  .chat-msg.cm-p1 .cm-name { color:var(--p1); }
+  .chat-msg.cm-p2 .cm-name { color:var(--p2); }
+  .chat-msg.cm-sys { color:var(--text3); font-style:italic; }
+  .chat-input-row { display:flex; border-top:1px solid var(--border); }
+  .chat-input { flex:1; padding:7px 10px; background:transparent; border:none; color:var(--text); font-size:13px; font-family:sans-serif; outline:none; }
+  .chat-send { padding:7px 12px; background:transparent; border:none; color:var(--text2); font-size:14px; cursor:pointer; transition:color 0.15s; }
+  .chat-send:hover { color:var(--gold); }
+
+  /* Your-turn flash */
+  @keyframes turnFlash { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .your-turn-flash { animation:turnFlash 0.6s ease-in-out 3; }
 </style>
 </head>
 <body>
+
+
+<!-- AUTH / LOBBY SCREENS -->
+<style>
+.screen { display:none; position:fixed; inset:0; background:var(--bg); z-index:200; overflow-y:auto; padding:24px 16px; }
+.screen.show { display:flex; align-items:center; justify-content:center; }
+.auth-box { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:32px 28px; width:100%; max-width:400px; }
+.auth-title { font-size:28px; font-weight:500; color:var(--text); margin-bottom:6px; text-align:center; font-family:'BurbankBig',sans-serif; }
+.auth-sub { font-size:13px; color:var(--text2); text-align:center; margin-bottom:24px; }
+.auth-input { width:100%; padding:10px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-size:14px; font-family:'BurbankBig',sans-serif; margin-bottom:12px; box-sizing:border-box; }
+.auth-input:focus { outline:none; border-color:var(--gold); }
+.auth-btn { width:100%; padding:11px; background:var(--gold); border:none; border-radius:var(--radius); color:var(--bg); font-size:16px; font-weight:bold; cursor:pointer; font-family:'BurbankBig',sans-serif; margin-bottom:10px; transition:opacity 0.15s; }
+.auth-btn:hover { opacity:0.85; }
+.auth-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.auth-btn-sec { width:100%; padding:11px; background:transparent; border:1px solid var(--border2); border-radius:var(--radius); color:var(--text2); font-size:14px; cursor:pointer; font-family:'BurbankBig',sans-serif; margin-bottom:10px; transition:background 0.15s; }
+.auth-btn-sec:hover { background:var(--bg3); }
+.auth-divider { display:flex; align-items:center; gap:10px; margin:16px 0; }
+.auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:var(--border2); }
+.auth-divider span { font-size:12px; color:var(--text3); }
+.auth-provider { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:10px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-size:14px; cursor:pointer; font-family:'BurbankBig',sans-serif; margin-bottom:8px; transition:background 0.15s; }
+.auth-provider:hover { background:var(--bg2); border-color:var(--border); }
+.auth-provider svg { flex-shrink:0; }
+.auth-switch { text-align:center; font-size:13px; color:var(--text2); margin-top:12px; }
+.auth-switch a { color:var(--gold); cursor:pointer; text-decoration:none; }
+.auth-err { color:#ff6b6b; font-size:12px; text-align:center; margin-bottom:10px; min-height:18px; }
+
+/* LOBBY */
+.lobby-box { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:28px 24px; width:100%; max-width:600px; }
+.lobby-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.lobby-title { font-size:26px; font-family:'BurbankBig',sans-serif; color:var(--text); }
+.lobby-user { display:flex; align-items:center; gap:10px; }
+.lobby-avatar { width:38px; height:38px; border-radius:50%; background:var(--bg3); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text2); font-family:'BurbankBig',sans-serif; overflow:hidden; }
+.lobby-avatar img { width:100%; height:100%; object-fit:cover; }
+.lobby-username { font-size:14px; color:var(--text); font-family:'BurbankBig',sans-serif; }
+.lobby-logout { font-size:11px; color:var(--text3); cursor:pointer; text-decoration:underline; }
+.lobby-section { font-size:12px; color:var(--text2); font-family:'BurbankBig',sans-serif; letter-spacing:0.08em; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+.lobby-btns { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+.lobby-btn { flex:1; min-width:140px; padding:14px; background:var(--goldbg); border:1px solid var(--gold); border-radius:var(--radius); color:var(--gold); font-size:18px; font-weight:bold; cursor:pointer; font-family:'BurbankBig',sans-serif; transition:background 0.15s; text-align:center; }
+.lobby-btn:hover { background:rgba(232,160,32,0.25); }
+.lobby-btn-sec { flex:1; min-width:140px; padding:14px; background:transparent; border:1px solid var(--border2); border-radius:var(--radius); color:var(--text2); font-size:16px; cursor:pointer; font-family:'BurbankBig',sans-serif; transition:background 0.15s; text-align:center; }
+.lobby-btn-sec:hover { background:var(--bg3); }
+
+/* STATS */
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+.stat-card { background:var(--bg3); border-radius:var(--radius); padding:12px 8px; text-align:center; }
+.stat-val { font-size:24px; font-weight:bold; color:var(--text); font-family:'BurbankBig',sans-serif; }
+.stat-lbl { font-size:11px; color:var(--text3); font-family:'BurbankBig',sans-serif; margin-top:2px; }
+
+/* LEADERBOARD */
+.lb-table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:20px; }
+.lb-table th { color:var(--text3); font-size:11px; font-family:'BurbankBig',sans-serif; padding:4px 8px; text-align:left; border-bottom:1px solid var(--border); }
+.lb-table td { padding:6px 8px; border-bottom:1px solid var(--border); color:var(--text); font-family:'BurbankBig',sans-serif; }
+.lb-me td { background:rgba(232,160,32,0.08); color:var(--gold); }
+.lb-rank { color:var(--text3); width:32px; }
+
+/* INVITE */
+.invite-code { font-size:36px; font-weight:bold; letter-spacing:0.15em; color:var(--gold); text-align:center; font-family:'BurbankBig',sans-serif; background:var(--bg3); border-radius:var(--radius); padding:16px; margin:12px 0; cursor:pointer; }
+.invite-code:hover { background:var(--bg2); }
+.invite-hint { font-size:12px; color:var(--text3); text-align:center; margin-bottom:16px; }
+.join-input-row { display:flex; gap:8px; margin-bottom:12px; }
+.join-input-row input { flex:1; padding:10px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-size:20px; font-family:'BurbankBig',sans-serif; letter-spacing:0.1em; text-transform:uppercase; text-align:center; }
+.join-input-row input:focus { outline:none; border-color:var(--gold); }
+.mp-waiting-dots::after { content:''; animation: dots 1.5s steps(4,end) infinite; }
+@keyframes dots { 0%,20%{content:'.'} 40%{content:'..'} 60%{content:'...'} 80%,100%{content:''} }
+.spinner { width:36px; height:36px; border:3px solid var(--border2); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; margin:16px auto; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* IN-GAME MP BAR */
+.mp-bar { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:8px 14px; margin-bottom:10px; display:none; align-items:center; justify-content:space-between; font-size:13px; font-family:'BurbankBig',sans-serif; }
+.mp-bar.show { display:flex; }
+.mp-bar-name { color:var(--text2); }
+.mp-bar-conn { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text3); }
+.mp-dot { width:8px; height:8px; border-radius:50%; background:#4caf50; }
+.mp-dot.off { background:#f44336; }
+</style>
+
+<!-- SCREEN: LOGIN -->
+<div class="screen show" id="screen-auth">
+  <div class="auth-box">
+    <div class="auth-title">Scacchi dei Pinci</div>
+    <div class="auth-sub" id="auth-mode-sub">Accedi per giocare online</div>
+    <div class="auth-err" id="auth-err"></div>
+
+    <div id="auth-form-login">
+      <input class="auth-input" id="auth-email" type="email" placeholder="Email" />
+      <input class="auth-input" id="auth-password" type="password" placeholder="Password" />
+      <button class="auth-btn" id="btn-auth-login">Accedi</button>
+      <div class="auth-divider"><span>oppure</span></div>
+      <button class="auth-provider" id="btn-auth-google">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.84-1.58 2.4v2h2.55c1.5-1.38 2.36-3.42 2.36-5.82 0-.56-.05-1.1-.1-1.58z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.55-2c-.72.48-1.64.77-2.75.77-2.12 0-3.9-1.43-4.54-3.36H1.82v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.44 10.47A4.8 4.8 0 0 1 4.19 9c0-.51.09-1 .25-1.47V5.46H1.82A8 8 0 0 0 .98 9c0 1.29.31 2.5.84 3.54l2.62-2.07z"/><path fill="#EA4335" d="M8.98 3.58c1.19 0 2.26.41 3.1 1.22l2.33-2.33C12.95.9 11.14.1 8.98.1A8 8 0 0 0 1.82 5.46l2.62 2.07c.64-1.93 2.42-3.36 4.54-3.36z"/></svg>
+        Continua con Google
+      </button>
+      <button class="auth-provider" id="btn-auth-microsoft">
+        <svg width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="7.5" height="7.5" fill="#F25022"/><rect x="9.5" y="1" width="7.5" height="7.5" fill="#7FBA00"/><rect x="1" y="9.5" width="7.5" height="7.5" fill="#00A4EF"/><rect x="9.5" y="9.5" width="7.5" height="7.5" fill="#FFB900"/></svg>
+        Continua con Microsoft
+      </button>
+      <div class="auth-switch">Non hai un account? <a id="btn-switch-register">Registrati</a></div>
+    </div>
+
+    <div id="auth-form-register" style="display:none">
+      <input class="auth-input" id="reg-name" type="text" maxlength="20" placeholder="Nome utente (max 20 caratteri)" />
+      <input class="auth-input" id="reg-email" type="email" placeholder="Email" />
+      <input class="auth-input" id="reg-password" type="password" placeholder="Password (min 6 caratteri)" />
+      <button class="auth-btn" id="btn-auth-register">Registrati</button>
+      <div class="auth-switch">Hai già un account? <a id="btn-switch-login">Accedi</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: LOBBY -->
+<div class="screen" id="screen-lobby">
+  <div class="lobby-box">
+    <div class="lobby-header">
+      <div class="lobby-title">Scacchi dei Pinci</div>
+      <div class="lobby-user">
+        <div class="lobby-avatar" id="lobby-avatar">?</div>
+        <div>
+          <div class="lobby-username" id="lobby-username">-</div>
+          <div class="lobby-logout" id="btn-logout">Esci</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lobby-section">LE TUE STATISTICHE</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val" id="stat-played">0</div><div class="stat-lbl">PARTITE</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-wins">0</div><div class="stat-lbl">VITTORIE</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-elo">1000</div><div class="stat-lbl">ELO</div></div>
+    </div>
+
+    <div class="lobby-section">CLASSIFICA</div>
+    <table class="lb-table">
+      <thead><tr><th class="lb-rank">#</th><th>Giocatore</th><th>ELO</th><th>V</th><th>P</th></tr></thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+
+    <div class="lobby-section">GIOCA</div>
+    <div class="lobby-btns">
+      <div class="lobby-btn" id="btn-quickmatch">⚔ Partita rapida</div>
+      <div class="lobby-btn" id="btn-invite">🔗 Invita amico</div>
+      <div class="lobby-btn-sec" id="btn-local">🖥 Gioca in locale</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: QUICK MATCH -->
+<div class="screen" id="screen-quickmatch">
+  <div class="auth-box" style="text-align:center">
+    <div class="auth-title">Ricerca avversario</div>
+    <div class="spinner" id="qm-spinner"></div>
+    <div class="auth-sub mp-waiting-dots" id="qm-status">Cercando un avversario</div>
+    <button class="auth-btn-sec" style="margin-top:16px" id="btn-cancel-qm">Annulla</button>
+  </div>
+</div>
+
+<!-- SCREEN: INVITE -->
+<div class="screen" id="screen-invite">
+  <div class="auth-box">
+    <div class="auth-title">Invita un amico</div>
+    <div class="auth-sub">Condividi il codice o inserisci quello dell'amico</div>
+    <div class="lobby-section" style="margin-top:16px">IL TUO CODICE</div>
+    <div class="invite-code" id="invite-code" title="Clicca per copiare">------</div>
+    <div class="invite-hint">Clicca sul codice per copiarlo</div>
+    <div class="lobby-section">UNISCITI A UNA PARTITA</div>
+    <div class="join-input-row">
+      <input id="join-code-input" type="text" maxlength="6" placeholder="CODICE" oninput="this.value=this.value.toUpperCase()" />
+      <button class="auth-btn" style="width:auto;padding:10px 18px" id="btn-join-code">Unisciti</button>
+    </div>
+    <div class="auth-err" id="join-err"></div>
+    <div id="invite-waiting" style="display:none;text-align:center">
+      <div class="spinner"></div>
+      <div class="auth-sub mp-waiting-dots">In attesa che l'amico si unisca</div>
+    </div>
+    <button class="auth-btn-sec" id="btn-cancel-invite">Annulla</button>
+  </div>
+</div>
+
 <div id="app">
+  <div class="mp-bar" id="mp-bar"><span class="mp-bar-name" id="mp-bar-name">Partita online</span><span class="mp-bar-conn"><span class="mp-dot" id="mp-dot"></span><span id="mp-bar-status">Connesso</span></span></div>
   <div class="header">
     <div class="header-row">
       <h1>Scacchi dei Pinci</h1>
-      <button class="btn-settings" onclick="openSettings()" title="Impostazioni">⚙</button>
+      <button class="btn-settings" id="btn-settings-open" title="Impostazioni">⚙</button>
     </div>
+  </div>
+
+  <!-- MULTIPLAYER STATUS BAR -->
+  <div class="conn-bar" id="conn-bar" style="display:none">
+    <div class="conn-dot" id="conn-dot-1"></div>
+    <span class="conn-name" id="conn-name-1">—</span>
+    <span style="color:var(--text3);margin:0 6px">vs</span>
+    <div class="conn-dot" id="conn-dot-2"></div>
+    <span class="conn-name" id="conn-name-2">—</span>
+    <span class="mp-mode-badge">ONLINE</span>
+  </div>
+
+  <!-- TIMEOUT BAR -->
+  <div class="timeout-bar-wrap" id="timeout-bar-wrap">
+    <div class="timeout-bar" id="timeout-bar" style="width:100%"></div>
   </div>
 
   <!-- SCOREBOARD -->
@@ -630,8 +870,8 @@
 
       <!-- ACTIONS -->
       <div class="action-row">
-        <button class="btn btn-insert" id="btn-ins" onclick="doInsert()" disabled>Gioca Carta</button>
-        <button class="btn btn-small" onclick="resetGame()">Nuova partita</button>
+        <button class="btn btn-insert" id="btn-ins" id="btn-ins" disabled>Gioca Carta</button>
+        <button class="btn btn-small" id="btn-reset">Nuova partita</button>
       </div>
 
       <!-- LOG (solo desktop: nella sidebar) -->
@@ -642,6 +882,15 @@
 
   <!-- LOG mobile: sempre in fondo alla pagina -->
   <div class="log-wrap log-mobile" id="log-mobile"></div>
+
+  <!-- CHAT (multiplayer only) -->
+  <div class="chat-panel" id="chat-panel" style="display:none">
+    <div class="chat-msgs" id="chat-msgs"></div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input" type="text" maxlength="200" placeholder="Scrivi un messaggio..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS OVERLAY -->
@@ -719,7 +968,519 @@
   </div>
 </div>
 
-<script>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         signInWithPopup, GoogleAuthProvider, OAuthProvider,
+         onAuthStateChanged, signOut, updateProfile }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getDatabase, ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBBojqNJEJ935iiXiqcmshI0hNS1iD3dow",
+  authDomain: "scacchideipincimp.firebaseapp.com",
+  projectId: "scacchideipincimp",
+  storageBucket: "scacchideipincimp.firebasestorage.app",
+  messagingSenderId: "887139659354",
+  appId: "1:887139659354:web:630ab968b99e04495d3263",
+  databaseURL: "https://scacchideipincimp-default-rtdb.europe-west1.firebasedatabase.app"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// ─── STATO GLOBALE ────────────────────────────────────────────────────────────
+let currentUser = null;
+let MP = {
+  isOnline: false,
+  gameId: null,
+  myIndex: 0,       // 0=G1, 1=G2
+  opponentName: '',
+  gameRef: null,
+  queueRef: null,
+  inviteRef: null,
+};
+
+// ─── AUTH UI ──────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+}
+
+window.switchToRegister = () => {
+  document.getElementById('auth-form-login').style.display = 'none';
+  document.getElementById('auth-form-register').style.display = '';
+  document.getElementById('auth-mode-sub').textContent = 'Crea un nuovo account';
+  document.getElementById('auth-err').textContent = '';
+};
+window.switchToLogin = () => {
+  document.getElementById('auth-form-register').style.display = 'none';
+  document.getElementById('auth-form-login').style.display = '';
+  document.getElementById('auth-mode-sub').textContent = 'Accedi per giocare online';
+  document.getElementById('auth-err').textContent = '';
+};
+
+function setAuthErr(msg) { document.getElementById('auth-err').textContent = msg; }
+
+function firebaseErrMsg(code) {
+  const map = {
+    'auth/email-already-in-use': 'Email già in uso',
+    'auth/invalid-email': 'Email non valida',
+    'auth/weak-password': 'Password troppo corta (min 6 caratteri)',
+    'auth/wrong-password': 'Password errata',
+    'auth/user-not-found': 'Nessun account con questa email',
+    'auth/invalid-credential': 'Credenziali non valide',
+    'auth/popup-closed-by-user': 'Login annullato',
+    'auth/cancelled-popup-request': '',
+  };
+  return map[code] || 'Errore: ' + code;
+}
+
+window.authLogin = async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pw = document.getElementById('auth-password').value;
+  if (!email || !pw) { setAuthErr('Compila tutti i campi'); return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+  } catch(e) { setAuthErr(firebaseErrMsg(e.code)); }
+};
+
+window.authRegister = async () => {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pw = document.getElementById('reg-password').value;
+  if (!name || !email || !pw) { setAuthErr('Compila tutti i campi'); return; }
+  if (name.length < 2) { setAuthErr('Nome troppo corto'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    await updateProfile(cred.user, { displayName: name });
+    await createUserProfile(cred.user.uid, name);
+  } catch(e) { setAuthErr(firebaseErrMsg(e.code)); }
+};
+
+window.authGoogle = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const cred = await signInWithPopup(auth, provider);
+    await ensureUserProfile(cred.user);
+  } catch(e) { if(e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
+};
+
+window.authMicrosoft = async () => {
+  try {
+    const provider = new OAuthProvider('microsoft.com');
+    const cred = await signInWithPopup(auth, provider);
+    await ensureUserProfile(cred.user);
+  } catch(e) { if(e.code !== 'auth/cancelled-popup-request') setAuthErr(firebaseErrMsg(e.code)); }
+};
+
+window.authLogout = async () => {
+  cleanupMP();
+  await signOut(auth);
+};
+
+// ─── USER PROFILE ─────────────────────────────────────────────────────────────
+async function createUserProfile(uid, displayName) {
+  await set(ref(db, 'users/' + uid), {
+    displayName,
+    elo: 1000,
+    played: 0,
+    wins: 0,
+    losses: 0,
+    createdAt: Date.now()
+  });
+}
+
+async function ensureUserProfile(user) {
+  const snap = await get(ref(db, 'users/' + user.uid));
+  if (!snap.exists()) {
+    await createUserProfile(user.uid, user.displayName || user.email.split('@')[0]);
+  }
+}
+
+async function loadLobby(user) {
+  currentUser = user;
+  // Update lobby UI
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('lobby-username').textContent = name;
+  const av = document.getElementById('lobby-avatar');
+  if (user.photoURL) {
+    av.innerHTML = `<img src="${user.photoURL}" alt="">`;
+  } else {
+    av.textContent = name[0].toUpperCase();
+  }
+  // Load stats
+  const snap = await get(ref(db, 'users/' + user.uid));
+  if (snap.exists()) {
+    const d = snap.val();
+    document.getElementById('stat-played').textContent = d.played || 0;
+    document.getElementById('stat-wins').textContent = d.wins || 0;
+    document.getElementById('stat-elo').textContent = d.elo || 1000;
+  }
+  // Load leaderboard
+  loadLeaderboard();
+  showScreen('screen-lobby');
+}
+
+async function loadLeaderboard() {
+  const q = query(ref(db, 'users'), orderByChild('elo'), limitToLast(10));
+  const snap = await get(q);
+  if (!snap.exists()) return;
+  const users = [];
+  snap.forEach(child => users.push({ uid: child.key, ...child.val() }));
+  users.sort((a, b) => (b.elo || 1000) - (a.elo || 1000));
+  const tbody = document.getElementById('lb-body');
+  tbody.innerHTML = '';
+  users.forEach((u, i) => {
+    const tr = document.createElement('tr');
+    if (u.uid === currentUser.uid) tr.className = 'lb-me';
+    tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName || '?'}</td><td>${u.elo || 1000}</td><td>${u.wins || 0}</td><td>${u.played || 0}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ─── AUTH STATE ───────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+  setAuthErr('');
+  if (user) {
+    await ensureUserProfile(user);
+    await loadLobby(user);
+  } else {
+    showScreen('screen-auth');
+    switchToLogin();
+  }
+});
+
+// ─── QUICK MATCH ──────────────────────────────────────────────────────────────
+window.showQuickMatch = async () => {
+  showScreen('screen-quickmatch');
+  document.getElementById('qm-status').textContent = 'Cercando un avversario';
+  // Look for an existing queue entry
+  const queueSnap = await get(ref(db, 'matchmaking/queue'));
+  let found = false;
+  if (queueSnap.exists()) {
+    queueSnap.forEach(child => {
+      if (!found && child.val().uid !== currentUser.uid) {
+        found = true;
+        const opponentEntry = child.val();
+        const opponentKey = child.key;
+        // Create game
+        createGame(currentUser.uid, opponentEntry.uid, opponentEntry.displayName, opponentKey);
+      }
+    });
+  }
+  if (!found) {
+    // Add self to queue
+    const name = currentUser.displayName || currentUser.email.split('@')[0];
+    const myQueueRef = ref(db, 'matchmaking/queue/' + currentUser.uid);
+    await set(myQueueRef, { uid: currentUser.uid, displayName: name, joinedAt: Date.now() });
+    MP.queueRef = myQueueRef;
+    // Listen for game creation
+    const myGameWaitRef = ref(db, 'matchmaking/games/' + currentUser.uid);
+    onValue(myGameWaitRef, (snap) => {
+      if (snap.exists()) {
+        off(myGameWaitRef);
+        remove(myGameWaitRef);
+        const { gameId, opponentName } = snap.val();
+        joinGameAsP2(gameId, opponentName);
+      }
+    });
+  }
+};
+
+async function createGame(p1uid, p2uid, p2name, p2queueKey) {
+  // Remove opponent from queue
+  await remove(ref(db, 'matchmaking/queue/' + p2queueKey));
+  const gameId = push(ref(db, 'games')).key;
+  const p1name = currentUser.displayName || currentUser.email.split('@')[0];
+  const initialState = buildInitialGameState();
+  await set(ref(db, 'games/' + gameId), {
+    p1: { uid: p1uid, name: p1name },
+    p2: { uid: p2uid, name: p2name },
+    state: initialState,
+    createdAt: Date.now(),
+    status: 'playing'
+  });
+  // Notify opponent
+  await set(ref(db, 'matchmaking/games/' + p2uid), { gameId, opponentName: p1name });
+  startOnlineGame(gameId, 0, p2name);
+}
+
+window.cancelQuickMatch = async () => {
+  if (MP.queueRef) { await remove(MP.queueRef); MP.queueRef = null; }
+  cleanupMP();
+  showScreen('screen-lobby');
+};
+
+async function joinGameAsP2(gameId, opponentName) {
+  startOnlineGame(gameId, 1, opponentName);
+}
+
+// ─── INVITE ───────────────────────────────────────────────────────────────────
+window.showInvite = async () => {
+  showScreen('screen-invite');
+  document.getElementById('join-err').textContent = '';
+  document.getElementById('invite-waiting').style.display = 'none';
+  // Generate 6-char code
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  document.getElementById('invite-code').textContent = code;
+  const p1name = currentUser.displayName || currentUser.email.split('@')[0];
+  MP.inviteRef = ref(db, 'invites/' + code);
+  await set(MP.inviteRef, {
+    hostUid: currentUser.uid,
+    hostName: p1name,
+    createdAt: Date.now(),
+    status: 'waiting'
+  });
+  // Listen for someone joining
+  onValue(MP.inviteRef, async (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.val();
+    if (data.status === 'joined' && data.guestUid !== currentUser.uid) {
+      off(MP.inviteRef);
+      const gameId = push(ref(db, 'games')).key;
+      const initialState = buildInitialGameState();
+      await set(ref(db, 'games/' + gameId), {
+        p1: { uid: currentUser.uid, name: p1name },
+        p2: { uid: data.guestUid, name: data.guestName },
+        state: initialState,
+        createdAt: Date.now(),
+        status: 'playing'
+      });
+      await update(MP.inviteRef, { gameId });
+      startOnlineGame(gameId, 0, data.guestName);
+    }
+  });
+  document.getElementById('invite-waiting').style.display = 'block';
+};
+
+window.copyCode = () => {
+  const code = document.getElementById('invite-code').textContent;
+  navigator.clipboard.writeText(code).catch(() => {});
+  document.getElementById('invite-code').textContent = '✓ Copiato!';
+  setTimeout(() => { document.getElementById('invite-code').textContent = code; }, 1500);
+};
+
+window.joinByCode = async () => {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (code.length !== 6) { document.getElementById('join-err').textContent = 'Codice non valido'; return; }
+  const invSnap = await get(ref(db, 'invites/' + code));
+  if (!invSnap.exists() || invSnap.val().status !== 'waiting') {
+    document.getElementById('join-err').textContent = 'Codice non trovato o scaduto';
+    return;
+  }
+  const invData = invSnap.val();
+  if (invData.hostUid === currentUser.uid) {
+    document.getElementById('join-err').textContent = 'Non puoi unirti alla tua stessa partita';
+    return;
+  }
+  const guestName = currentUser.displayName || currentUser.email.split('@')[0];
+  await update(ref(db, 'invites/' + code), { status: 'joined', guestUid: currentUser.uid, guestName });
+  // Wait for gameId
+  onValue(ref(db, 'invites/' + code), (snap) => {
+    if (snap.exists() && snap.val().gameId) {
+      off(ref(db, 'invites/' + code));
+      joinGameAsP2(snap.val().gameId, invData.hostName);
+    }
+  });
+};
+
+window.cancelInvite = async () => {
+  if (MP.inviteRef) { await remove(MP.inviteRef); MP.inviteRef = null; }
+  cleanupMP();
+  showScreen('screen-lobby');
+};
+
+// ─── GAME SYNC ────────────────────────────────────────────────────────────────
+function buildInitialGameState() {
+  // Re-init game state and return it as plain object
+  initGame();
+  return {
+    pts: [0,0], turnNum: 1, turn: 0, pieceStep: 0,
+    pipe: Array(5).fill(null).map(() => ({ p1: null, p2: null })),
+    basket: Array(10).fill(null).map(() => {
+      const t = POOL[Math.floor(Math.random() * POOL.length)];
+      return { name: t.name, z: [...t.z], val: t.val, tier: tierOf(t.val), id: Math.random() };
+    }),
+    log: [], over: false, firstTurnDone: [false, false], selected: -1
+  };
+}
+
+function startOnlineGame(gameId, myIndex, opponentName) {
+  MP.isOnline = true;
+  MP.gameId = gameId;
+  MP.myIndex = myIndex;
+  MP.opponentName = opponentName;
+  MP.gameRef = ref(db, 'games/' + gameId + '/state');
+
+  // Show game screen
+  document.getElementById('screen-quickmatch').classList.remove('show');
+  document.getElementById('screen-invite').classList.remove('show');
+  document.getElementById('app').style.display = '';
+  const mpBar = document.getElementById('mp-bar');
+  mpBar.classList.add('show');
+  document.getElementById('mp-bar-name').textContent = 'VS ' + opponentName;
+
+  // Listen to game state
+  onValue(MP.gameRef, (snap) => {
+    if (!snap.exists()) return;
+    const state = snap.val();
+    // Sync state to local G
+    Object.assign(G, state);
+    G.selected = -1;
+    renderAll();
+    if (state.over) {
+      setTimeout(() => {
+        updateStats(state);
+        showWinner();
+      }, 400);
+    }
+  });
+
+  initGame();
+}
+
+function cleanupMP() {
+  if (MP.gameRef) { off(MP.gameRef); MP.gameRef = null; }
+  MP.isOnline = false;
+  MP.gameId = null;
+  document.getElementById('mp-bar').classList.remove('show');
+  document.getElementById('app').style.display = 'none';
+}
+
+async function updateStats(state) {
+  if (!currentUser || !MP.isOnline) return;
+  const myPts = state.pts[MP.myIndex];
+  const opPts = state.pts[1 - MP.myIndex];
+  const won = myPts > opPts;
+  const snap = await get(ref(db, 'users/' + currentUser.uid));
+  if (!snap.exists()) return;
+  const d = snap.val();
+  const oldElo = d.elo || 1000;
+  const k = 32;
+  const expected = 1 / (1 + Math.pow(10, (1000 - oldElo) / 400));
+  const newElo = Math.round(oldElo + k * ((won ? 1 : 0) - expected));
+  await update(ref(db, 'users/' + currentUser.uid), {
+    played: (d.played || 0) + 1,
+    wins: (d.wins || 0) + (won ? 1 : 0),
+    losses: (d.losses || 0) + (won ? 0 : 1),
+    elo: newElo
+  });
+}
+
+// ─── INTERCEPT GAME ACTIONS ───────────────────────────────────────────────────
+const _origDoInsert = doInsert;
+window.doInsert = function() {
+  if (!MP.isOnline) { _origDoInsert(); return; }
+  if (G.selected < 0 || G.over) return;
+  if (G.turn !== MP.myIndex) { return; } // Non il tuo turno
+  // Apply move locally then push to Firebase
+  _origDoInsert();
+  // Push updated state to Firebase
+  const stateToSave = { pts: G.pts, turnNum: G.turnNum, turn: G.turn, pieceStep: G.pieceStep,
+    pipe: G.pipe, basket: G.basket, log: G.log, over: G.over,
+    firstTurnDone: G.firstTurnDone, selected: -1 };
+  set(MP.gameRef, stateToSave);
+};
+
+const _origResetGame = resetGame;
+window.resetGame = function() {
+  if (MP.isOnline) {
+    cleanupMP();
+    showScreen('screen-lobby');
+    loadLobby(currentUser);
+  } else {
+    _origResetGame();
+  }
+};
+
+// ─── LOCAL PLAY ───────────────────────────────────────────────────────────────
+window.playLocal = () => {
+  MP.isOnline = false;
+  document.getElementById('screen-lobby').classList.remove('show');
+  document.getElementById('screen-auth').classList.remove('show');
+  document.getElementById('app').style.display = '';
+  initGame();
+};
+
+// Disable insert button when not your turn in online mode
+const _origRenderAll = renderAll;
+window.renderAll = function() {
+  _origRenderAll();
+  if (MP.isOnline) {
+    const btn = document.getElementById('btn-ins');
+    if (btn && G.turn !== MP.myIndex && !G.over) {
+      btn.disabled = true;
+      btn.textContent = 'Turno avversario...';
+    } else if (btn) {
+      btn.textContent = 'Gioca Carta';
+    }
+  }
+};
+
+
+// ─── EXPOSE TO WINDOW (for static HTML onclick handlers) ─────────────────────
+// Settings and in-game buttons use onclick= in static HTML — expose via window
+window.switchTab = switchTab;
+window.resetPieceValues = resetPieceValues;
+window.closeSettings = closeSettings;
+window.applySettings = applySettings;
+window.sendChat = () => {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  // For now just add locally (chat is a future feature)
+};
+
+// ─── EVENT LISTENERS ─────────────────────────────────────────────────────────
+function bindEl(id, fn) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', fn);
+}
+
+bindEl('btn-auth-login',     () => authLogin());
+bindEl('btn-auth-register',  () => authRegister());
+bindEl('btn-auth-google',    () => authGoogle());
+bindEl('btn-auth-microsoft', () => authMicrosoft());
+bindEl('btn-switch-register',() => switchToRegister());
+bindEl('btn-switch-login',   () => switchToLogin());
+bindEl('btn-logout',         () => authLogout());
+bindEl('btn-quickmatch',     () => showQuickMatch());
+bindEl('btn-invite',         () => showInvite());
+bindEl('btn-local',          () => playLocal());
+bindEl('btn-cancel-qm',      () => cancelQuickMatch());
+bindEl('invite-code',        () => copyCode());
+bindEl('btn-join-code',      () => joinByCode());
+bindEl('btn-cancel-invite',  () => cancelInvite());
+bindEl('btn-ins',            () => doInsert());
+bindEl('btn-reset',          () => resetGame());
+bindEl('btn-settings-open',  () => openSettings());
+
+// Apply/cancel settings buttons (rendered dynamically, use delegation)
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('btn-apply')) applySettings();
+  if (e.target.classList.contains('btn-cancel')) closeSettings();
+  if (e.target.id === 'btn-apply') applySettings();
+});
+
+// Join code input — Enter key
+const joinInput = document.getElementById('join-code-input');
+if (joinInput) joinInput.addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
+
+// Auth inputs — Enter key
+document.getElementById('auth-password')?.addEventListener('keydown', e => { if (e.key === 'Enter') authLogin(); });
+
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('app').style.display = 'none';
+
+
 // ─── DATI ────────────────────────────────────────────────────────────────────
 const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
 
@@ -1331,8 +2092,7 @@ function renderLog() {
 }
 
 
-// ─── START ────────────────────────────────────────────────────────────────────
-initGame();
+
 </script>
 </body>
 </html>
