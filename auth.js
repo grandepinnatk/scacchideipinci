@@ -8,7 +8,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, query, orderByChild, limitToLast }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, MP } from './shared.js';
+import { setCurrentUser, MP, showScreen, authCallbacks } from './shared.js';
 let currentUser = null; // local mirror
 import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
@@ -16,11 +16,6 @@ import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame } from './matchmaking.js';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
-export function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
-  const el = document.getElementById(id);
-  if (el) el.classList.add('show');
-}
 export function switchToRegister() {
   document.getElementById('auth-form-login').style.display = 'none';
   document.getElementById('auth-form-register').style.display = '';
@@ -198,9 +193,17 @@ document.getElementById('join-code-input')?.addEventListener('keydown', e => { i
 document.getElementById('auth-password')?.addEventListener('keydown',   e => { if(e.key==='Enter') authLogin(); });
 window.addEventListener('beforeunload', () => { if(MP.presenceRef) set(MP.presenceRef, 0); });
 
+// Registra i callbacks per matchmaking.js
+authCallbacks.loadLobby       = loadLobby;
+authCallbacks.loadLeaderboard = loadLeaderboard;
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('app').style.display = 'none';
 initGame(); // populate G with valid structure before any render
+
+// Registra i callbacks per matchmaking.js
+authCallbacks.loadLobby       = loadLobby;
+authCallbacks.loadLeaderboard = loadLeaderboard;
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('app').style.display = 'none';

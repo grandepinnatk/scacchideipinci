@@ -3,7 +3,7 @@
 import { db, auth }          from './firebase.js';
 import { ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { MP, currentUser, setCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS } from './shared.js';
+import { MP, currentUser, setCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js';
 import { G, POOL, SETTINGS, tierOf, initGame, renderAll, showWinner,
          doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js';
 
@@ -424,7 +424,7 @@ export async function cleanupMP(returnToLobby = true) {
   if (btnReset) { btnReset.textContent='Nuova partita'; btnReset.style.color=''; btnReset.style.borderColor=''; }
   document.getElementById('mp-bar').classList.remove('show');
   document.getElementById('app').style.display = 'none';
-  if (returnToLobby && currentUser) { loadLeaderboard(); showScreen('screen-lobby'); loadLobby(currentUser); }
+  if (returnToLobby && currentUser) { if (authCallbacks.loadLeaderboard) authCallbacks.loadLeaderboard(); showScreen('screen-lobby'); if (authCallbacks.loadLobby) authCallbacks.loadLobby(currentUser); }
 }
 
 // ─── ELO UPDATE ──────────────────────────────────────────────────────────────

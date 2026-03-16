@@ -23,3 +23,16 @@ export const MP = {
 
 export const TURN_TIMEOUT_MS = 45000;
 export const ABANDON_MS      = 120000;
+
+export function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('show');
+}
+
+// Callbacks registrati da auth.js per permettere a matchmaking.js di chiamarli
+// senza dipendenza circolare
+export const authCallbacks = {
+  loadLobby:       null,
+  loadLeaderboard: null,
+};
