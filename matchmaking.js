@@ -1,11 +1,11 @@
 // ─── matchmaking.js — quick match, invite, partita online, timer, forfeit ────
 
-import { db, auth }          from './firebase.js?v=1773702579';
+import { db, auth }          from './firebase.js?v=1773702971';
 import { ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { MP, currentUser, setCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1773702579';
+import { MP, currentUser, setCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1773702971';
 import { G, POOL, SETTINGS, tierOf, initGame, renderAll, showWinner,
-         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1773702579';
+         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1773702971';
 
 // ─── QUICK MATCH ─────────────────────────────────────────────────────────────
 export async function showQuickMatch() {
@@ -272,6 +272,7 @@ export async function startOnlineGame(gameId, myIndex, opponentName) {
     Object.assign(G, normalized);
     G.selected = -1;
     renderAll();
+    updateOnlineUI();
     if (!G.over) startTurnTimer();
   }
 
@@ -283,6 +284,7 @@ export async function startOnlineGame(gameId, myIndex, opponentName) {
     if (state) Object.assign(G, state);
     G.selected = -1;
     renderAll();
+    updateOnlineUI();
     if (state.over) {
       clearTurnTimer();
       if (!MP.eloUpdated) {
@@ -480,19 +482,15 @@ export function playLocal() {
   initGame();
 }
 
-// Override renderAll for online button state + player names
-const _origRenderAll = renderAll;
-window.renderAll = function() {
-  try { _origRenderAll(); } catch(e) { console.error('renderAll error:', e); return; }
+// Aggiorna UI online dopo ogni renderAll (bottoni turno + nomi giocatori)
+function updateOnlineUI() {
   if (!MP.isOnline) return;
-  // Update button
   const btn = document.getElementById('btn-ins');
   if (btn) {
     if (G.over)                      { btn.disabled=true;  btn.textContent='Partita terminata'; }
     else if (G.turn !== MP.myIndex)  { btn.disabled=true;  btn.textContent='Turno avversario...'; }
     else { btn.disabled=(G.selected<0); btn.textContent='Gioca Carta'; }
   }
-  // Update player name labels
   if (currentUser) {
     const myName  = currentUser.displayName || currentUser.email.split('@')[0];
     const p1label = MP.myIndex===0 ? myName : MP.opponentName;
@@ -502,4 +500,4 @@ window.renderAll = function() {
     if (sc1) sc1.textContent = p1label;
     if (sc2) sc2.textContent = p2label;
   }
-};
+}
