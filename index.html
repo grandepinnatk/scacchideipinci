@@ -1158,12 +1158,16 @@ async function showQuickMatch() {
   const queueSnap = await get(ref(db,'matchmaking/queue'));
   let found = false;
   if (queueSnap.exists()) {
-    queueSnap.forEach(child => {
-      if (!found && child.val().uid !== currentUser.uid) {
+    for (const child of Object.values(queueSnap.val() || {})) {
+      if (!found && child.uid !== currentUser.uid) {
         found = true;
-        createGame(currentUser.uid, child.val().uid, child.val().displayName, child.key);
+        // Find the key for this child
+        let childKey = null;
+        queueSnap.forEach(c => { if (c.val().uid === child.uid) childKey = c.key; });
+        await createGame(currentUser.uid, child.uid, child.displayName, childKey);
+        break;
       }
-    });
+    }
   }
   if (!found) {
     const name = currentUser.displayName || currentUser.email.split('@')[0];
@@ -1353,22 +1357,20 @@ async function startOnlineGame(gameId, myIndex, opponentName) {
   if (MP.heartbeatInterval) clearInterval(MP.heartbeatInterval);
   MP.heartbeatInterval = setInterval(() => set(MP.presenceRef, Date.now()), 20000);
 
-  // Initialize G with valid structure, then overwrite with Firebase data
-  initGame();
-  // Load initial state — awaited so field renders before onValue fires
-  const initSnap = await get(MP.gameRef);
-  if (initSnap.exists()) {
+  // Load game state from Firebase — this is the single source of truth
+  // Retry a few times in case data isn't ready yet (race condition on P2 side)
+  let initSnap = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    initSnap = await get(MP.gameRef);
+    if (initSnap.exists()) break;
+    await new Promise(r => setTimeout(r, 500)); // wait 500ms and retry
+  }
+  if (initSnap && initSnap.exists()) {
     const normalized = normalizeState(initSnap.val());
-    // Merge carefully: only overwrite if arrays are valid
-    if (Array.isArray(normalized.basket) && normalized.basket.length > 0) {
-      Object.assign(G, normalized);
-    }
+    Object.assign(G, normalized);
     G.selected = -1;
     renderAll();
     if (!G.over) startTurnTimer();
-  } else {
-    // Firebase data not ready yet — render local initGame state and wait for onValue
-    renderAll();
   }
 
   // Listen to game state — single source of truth
@@ -1376,10 +1378,7 @@ async function startOnlineGame(gameId, myIndex, opponentName) {
   onValue(MP.gameRef, snap => {
     if (!snap.exists()) return;
     const state = normalizeState(snap.val());
-    if (state && Array.isArray(state.basket) && state.basket.length > 0 &&
-        Array.isArray(state.pipe) && state.pipe.length > 0) {
-      Object.assign(G, state);
-    }
+    if (state) Object.assign(G, state);
     G.selected = -1;
     renderAll();
     if (state.over) {
