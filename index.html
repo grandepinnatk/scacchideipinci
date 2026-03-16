@@ -1389,6 +1389,8 @@ async function forfeitGame() {
   const ok = confirm('Abbandonare la partita? La vittoria verrà assegnata al tuo avversario.');
   if (!ok) return;
   await applyGameOver(false);
+  // Return to lobby after a short delay (let showWinner display briefly)
+  setTimeout(() => cleanupMP(true), 1500);
 }
 async function handleOpponentAbandoned() {
   if (!MP.gameId || G.over) return;
@@ -1463,8 +1465,16 @@ window.doInsert = function() {
 
 const _origResetGame = resetGame;
 window.resetGame = function() {
-  if (MP.isOnline) forfeitGame();
-  else _origResetGame();
+  if (MP.isOnline) {
+    if (G.over) {
+      // Game already over — just return to lobby
+      cleanupMP(true);
+    } else {
+      forfeitGame();
+    }
+  } else {
+    _origResetGame();
+  }
 };
 
 // ─── LOCAL PLAY ──────────────────────────────────────────────────────────────
@@ -1768,6 +1778,8 @@ function checkWin() {
 
 function selectCard(idx) {
   if (G.over) return;
+  // In online mode, block selection when it's not your turn
+  if (MP.isOnline && G.turn !== MP.myIndex) return;
   G.selected = G.selected === idx ? -1 : idx;
   renderBasket();
   renderPhaseSlots();
@@ -2029,7 +2041,7 @@ function renderBasket() {
     el.appendChild(d);
   });
   document.getElementById('basket-hint').textContent = G.over ? '' : 'Clicca per selezionare';
-  document.getElementById('btn-ins').disabled = G.selected < 0 || G.over;
+  document.getElementById('btn-ins').disabled = G.selected < 0 || G.over || (MP.isOnline && G.turn !== MP.myIndex);
 }
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
