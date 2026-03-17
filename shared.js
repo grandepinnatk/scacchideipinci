@@ -1,3 +1,5 @@
+export const APP_VERSION = "1.0.0";
+
 // ─── shared.js — stato condiviso tra auth, matchmaking e game ────────────────
 
 export let currentUser = null;
