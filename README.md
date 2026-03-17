@@ -27,6 +27,80 @@ Ogni mossa ha un timer di **45 secondi**. Allo scadere viene giocata automaticam
 
 ---
 
+## Schema a blocchi del flusso di gioco
+
+```
+┌─────────────────────────┐
+│      Apertura app       │
+└────────────┬────────────┘
+             │
+┌────────────▼────────────┐
+│  Login / Registrazione  │
+│  email · Google · MS    │
+└────────────┬────────────┘
+             │
+┌────────────▼────────────┐
+│          Lobby          │
+│  statistiche · ELO      │
+└────────────┬────────────┘
+             │
+     ┌───────▼────────┐
+     │ Scelta modalità│
+     └──┬──────┬───┬──┘
+        │      │   │
+  Rapida│  Inv.│   │Locale
+        │      │   │
+┌───────▼┐ ┌───▼──┐ ┌▼──────┐
+│ Coda   │ │Codice│ │Stesso │
+│poll.2s │ │ 6chr │ │schermo│
+└───┬────┘ └──┬───┘ └──┬────┘
+    └─────────┼─────────┘
+              │
+┌─────────────▼───────────────┐
+│    Partita avviata — T1     │
+│  G1: 1 pezzo · G2: 1 pezzo  │
+└─────────────┬───────────────┘
+              │
+┌─────────────▼───────────────┐  ◄──────────────────────┐
+│       Turno N ≥ 2           │                          │
+│   ogni giocatore: 2 pezzi   │                          │
+└─────────────┬───────────────┘                          │
+              │                                          │
+┌─────────────▼───────────────┐  ┌──────────────────┐   │
+│  Seleziona carta dal basket │  │    Timer 45s     │   │
+└─────────────┬───────────────┘  │ auto: carta peg. │   │
+              │         - - - -► └──────────────────┘   │
+┌─────────────▼───────────────┐                          │
+│   Gioca Carta → pipe        │                          │
+└─────────────┬───────────────┘                          │
+              │                                          │
+┌─────────────▼───────────────┐                          │
+│   Confronto automatico      │                          │
+│  valore zona · +1 punto     │                          │
+└─────────────┬───────────────┘                          │
+              │                                          │
+┌─────────────▼───────────────┐  ┌──────────────────┐   │
+│      Punteggio ≥ 30?        │  │ Termina partita  │   │
+└──┬──────────────────────────┘  │ sconfitta immed. │   │
+   │ No              │ Sì - - -► └──────────────────┘   │
+   └─────────────────┘                                   │
+   │                 │                                   │
+   └─────────────────┴──── No ──────────────────────────►┘
+                     │ Sì
+        ┌────────────▼─────────────┐  ┌──────────────────┐
+        │      Fine partita        │  │  Disconnessione  │
+        │ HAI VINTO/PERSO · ELO    │  │ vittoria 2 min   │
+        └────────────┬─────────────┘  └──────────────────┘
+                     │
+        ┌────────────▼─────────────┐
+        │     Torna alla lobby     │
+        └──────────────────────────┘
+```
+
+> Il diagramma completo in PDF è disponibile nel file `scacchi_dei_pinci_flusso_v1.0.0.pdf`.
+
+---
+
 ## I 40 Pezzi
 
 Ogni pezzo ha valori specifici per le tre zone e un'illustrazione ispirata a un racconto di Borges.
