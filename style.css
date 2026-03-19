@@ -603,3 +603,41 @@
   /* Your-turn flash */
   @keyframes turnFlash { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .your-turn-flash { animation:turnFlash 0.6s ease-in-out 3; }
+
+.lobby-online-stats {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.los-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+}
+.los-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.los-dot-online  { background: #5dca8a; }
+.los-dot-ingame  { background: var(--gold); }
+.los-label {
+  font-size: 11px;
+  color: var(--text2);
+  font-family: 'BurbankBig', sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.los-count {
+  font-size: 22px;
+  font-weight: bold;
+  font-family: 'BurbankBig', sans-serif;
+  color: var(--text1);
+  margin-left: auto;
+}

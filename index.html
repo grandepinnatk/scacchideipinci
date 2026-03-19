@@ -38,7 +38,7 @@
     font-style: normal;
   }
 </style>
-<link rel="stylesheet" href="style.css?v=1.1.2">
+<link rel="stylesheet" href="style.css?v=1.1.3">
 </head>
 <body>
 
@@ -161,6 +161,19 @@
           <div class="lobby-username" id="lobby-username">-</div>
           <div class="lobby-logout" id="btn-logout">Esci</div>
         </div>
+      </div>
+    </div>
+
+    <div class="lobby-online-stats" id="lobby-online-stats">
+      <div class="los-item">
+        <span class="los-dot los-dot-online"></span>
+        <span class="los-label">Online</span>
+        <span class="los-count" id="los-count-online">—</span>
+      </div>
+      <div class="los-item">
+        <span class="los-dot los-dot-ingame"></span>
+        <span class="los-label">In gioco</span>
+        <span class="los-count" id="los-count-ingame">—</span>
       </div>
     </div>
 
@@ -407,6 +420,6 @@
 </div>
 
 <!-- Moduli caricati in ordine: firebase → shared → game → matchmaking → auth -->
-<script type="module" src="auth.js?v=1.1.2"></script>
+<script type="module" src="auth.js?v=1.1.3"></script>
 </body>
 </html>

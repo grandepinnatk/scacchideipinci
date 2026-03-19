@@ -1,20 +1,20 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.1.0';
+import { auth, db }           from './firebase.js?v=1.1.3';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
          onAuthStateChanged, signOut, updateProfile }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { ref, set, get, update, remove, query, orderByChild, limitToLast }
+import { ref, set, get, update, remove, onValue, off, query, orderByChild, limitToLast }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.1.0';
+import { setCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.1.3';
 let currentUser = null; // local mirror
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1.1.0';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1.1.3';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1.1.0';
+         startOnlineGame } from './matchmaking.js?v=1.1.3';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
@@ -97,7 +97,60 @@ export async function createUserProfile(uid, displayName) {
 export async function ensureUserProfile(user) {
   const snap = await get(ref(db,'users/'+user.uid));
   if (!snap.exists()) await createUserProfile(user.uid, user.displayName || user.email.split('@')[0]);
+  // Aggiorna lastSeen per il contatore utenti online
+  await update(ref(db,'users/'+user.uid), { lastSeen: Date.now() });
 }
+
+// ─── ONLINE STATS ─────────────────────────────────────────────────────────────
+let _onlineStatsUnsub = null;
+
+function startOnlineStats() {
+  if (_onlineStatsUnsub) return; // already watching
+
+  // Conta utenti online: presence > now - 2min in /users
+  // Conta partite in corso: games con status='playing'
+  // Usiamo due listener separati
+
+  const usersRef = ref(db, 'users');
+  const gamesRef = ref(db, 'games');
+
+  const usersListener = onValue(usersRef, snap => {
+    if (!snap.exists()) {
+      document.getElementById('los-count-online').textContent = '0';
+      return;
+    }
+    const now = Date.now();
+    let online = 0;
+    snap.forEach(child => {
+      const d = child.val();
+      // Consideriamo online chi ha aggiornato il profilo negli ultimi 5 minuti
+      if (d.lastSeen && (now - d.lastSeen) < 5 * 60 * 1000) online++;
+    });
+    const el = document.getElementById('los-count-online');
+    if (el) el.textContent = online;
+  });
+
+  const gamesListener = onValue(gamesRef, snap => {
+    if (!snap.exists()) {
+      document.getElementById('los-count-ingame').textContent = '0';
+      return;
+    }
+    let ingame = 0;
+    snap.forEach(child => {
+      const d = child.val();
+      if (d.status === 'playing') ingame++;
+    });
+    const el = document.getElementById('los-count-ingame');
+    if (el) el.textContent = ingame;
+  });
+
+  _onlineStatsUnsub = () => { off(usersRef, 'value', usersListener); off(gamesRef, 'value', gamesListener); };
+}
+
+function stopOnlineStats() {
+  if (_onlineStatsUnsub) { _onlineStatsUnsub(); _onlineStatsUnsub = null; }
+}
+
 export async function loadLobby(user) {
   currentUser = user;
   const name = user.displayName || user.email.split('@')[0];
@@ -125,6 +178,7 @@ export async function loadLobby(user) {
     await remove(ref(db,'activeGame/'+user.uid));
   }
   loadLeaderboard();
+  startOnlineStats();
   showScreen('screen-lobby');
 }
 export async function loadLeaderboard() {
