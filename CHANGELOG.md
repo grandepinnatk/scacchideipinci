@@ -12,10 +12,14 @@ Le illustrazioni coprono l'intera gamma dei 40 pezzi: dall'**Accenditorce** che 
 
 Le quattro carte completate in questa release — **Bevipozioni**, **Mangiapane**, **Srotolatappeti** e **Vendistracci** — chiudono il ciclo visivo avviato nella v1.0.0.
 
+### Correzioni UI
+- **Campo di gioco** — le due lane (G1/G2) ora hanno altezza fissa e garantita: ogni cella è alta 280px, ogni corsia esattamente il 50%. Illustrazione, nome e valori sono sempre visibili in tutte e 5 le caselle, incluse quelle del Villaggio
+- **CSS estratto** in file separato `style.css` (24KB); i `@font-face` con i dati embedded restano inline in `index.html`
+
 ### Modifiche tecniche
-- Sostituzione di tutte e 40 le immagini PNG nella cartella `img/`
+- Aggiornate tutte e 40 le immagini PNG nella cartella `img/`
+- Corretti i nomi file di `Illetterato` (`illetterato.png`) e `L'impiccato` (`limpiccato.png`) che non corrispondevano alla convenzione di naming del codice
 - Versione aggiornata a `1.1.0` in tutti i moduli
-- Nessuna modifica alla logica di gioco o al codice multiplayer
 
 ---
 

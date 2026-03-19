@@ -141,7 +141,7 @@
     position: relative;
     overflow: hidden;
     transition: box-shadow 0.15s, border-color 0.15s;
-    min-height: 180px;
+    height: 280px;
   }
   /* Castello: blu acciaio */
   .cell.zone-castello { background: rgba(50, 90, 140, 0.18); border-color: rgba(74, 140, 220, 0.35); }
@@ -152,8 +152,8 @@
   .cell.combat-flash { box-shadow: 0 0 0 2px var(--gold); border-color: var(--gold); }
 
   .cell-num {
-    font-size: 18px; color: var(--text3); font-family: 'BurbankBig', monospace;
-    text-align: center; padding: 3px 0 2px; flex-shrink: 0;
+    font-size: 13px; color: var(--text3); font-family: 'BurbankBig', monospace;
+    text-align: center; padding: 2px 0; flex-shrink: 0;
   }
 
   /* Two fixed lanes inside each cell */
@@ -162,16 +162,18 @@
     flex-direction: column;
     flex: 1;
     border-top: 0.5px solid rgba(255,255,255,0.06);
+    overflow: hidden;
   }
   .lane {
-    flex: 1;
-    min-height: 80px;
+    flex: 0 0 50%;
+    height: 50%;
     display: flex;
     align-items: stretch;
     justify-content: center;
     padding: 4px 3px;
     width: 100%;
     box-sizing: border-box;
+    overflow: hidden;
   }
   .lane-p1 {
     border-bottom: 0.5px solid rgba(255,255,255,0.08);
@@ -185,6 +187,11 @@
     font-size: 8px;
     font-family: 'BurbankBig', monospace;
     color: var(--text3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
   }
   .piece-chip {
     border-radius: 5px;
@@ -195,20 +202,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
     width: 100%;
+    height: 100%;
     box-sizing: border-box;
-    flex: 1;
+    overflow: hidden;
   }
   .piece-chip.pc-p1 { background: var(--p1bg); border: 1px solid var(--p1border); }
   .piece-chip.pc-p2 { background: var(--p2bg); border: 1px solid var(--p2border); }
-  .pc-img { width: 100%; aspect-ratio: 1/1; flex-shrink: 0; border-radius: 3px; overflow: hidden; background: #0f0e0d; min-height: 60px; }
+  .pc-img { width: 100%; flex: 1; min-height: 0; border-radius: 3px; overflow: hidden; background: #0f0e0d; }
   .pc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .pc-info { width: 100%; }
-  .pc-name { font-weight: bold; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+  .pc-info { width: 100%; flex-shrink: 0; }
+  .pc-name { font-weight: bold; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; width: 100%; }
   .pc-p1 .pc-name { color: var(--p1); }
   .pc-p2 .pc-name { color: var(--p2); }
-  .pc-vals { color: var(--text2); font-family: 'BurbankBig', monospace; font-size: 20px; font-weight: bold; text-align: center; margin-top: 2px; }
+  .pc-vals { color: var(--text2); font-family: 'BurbankBig', monospace; font-size: 16px; font-weight: bold; text-align: center; margin-top: 1px; }
   .pc-zone-hi { color: var(--gold); font-weight: bold; font-size: 22px; }
 
   /* BASKET card with illustration */
