@@ -2,10 +2,24 @@
 
 ---
 
+## [1.1.2] — 2026-03-19
+
+### Correzioni UI
+- Barra di connessione multiplayer (`.mp-bar-conn`): `font-size` aumentato da `11px` a `18px`
+
+---
+
 ## [1.1.1] — 2026-03-19
 
 ### Correzioni UI
 - **Overlay carte campo** — sfondo dell'overlay `.pc-info` cambiato da gradiente nero a grigio piatto semitrasparente `rgba(40,38,35,0.75)`, più coerente con la palette del gioco
+
+---
+
+## [1.1.2] — 2026-03-19
+
+### Correzioni UI
+- Barra di connessione multiplayer (`.mp-bar-conn`): `font-size` aumentato da `11px` a `18px`
 
 ---
 
