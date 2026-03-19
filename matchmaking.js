@@ -1,11 +1,11 @@
 // ─── matchmaking.js — quick match, invite, partita online, timer, forfeit ────
 
-import { db, auth }          from './firebase.js?v=1.1.6';
+import { db, auth }          from './firebase.js?v=1.1.7';
 import { ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.1.6';
+import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.1.7';
 import { G, POOL, SETTINGS, tierOf, initGame, renderAll, showWinner,
-         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.1.6';
+         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.1.7';
 
 // ─── QUICK MATCH ─────────────────────────────────────────────────────────────
 export async function showQuickMatch() {
@@ -278,6 +278,9 @@ export function normalizeState(state) {
 
 
 export async function startOnlineGame(gameId, myIndex, opponentName) {
+  // Reset G a stato pulito prima di ogni partita
+  initGame();
+
   MP.isOnline      = true;
   MP.gameId        = gameId;
   MP.myIndex       = myIndex;

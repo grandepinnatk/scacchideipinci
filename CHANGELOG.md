@@ -2,6 +2,13 @@
 
 ---
 
+## [1.1.7] — 2026-03-19
+
+### Correzioni
+- **Nuova partita dopo abbandono** — risolto bug per cui riavviando una partita con lo stesso avversario il basket mostrava le carte della partita precedente. Aggiunta chiamata a `initGame()` all'inizio di `startOnlineGame` per resettare completamente lo stato di gioco prima di caricare i dati Firebase della nuova partita
+
+---
+
 ## [1.1.6] — 2026-03-19
 
 ### Modifiche regole
@@ -29,6 +36,13 @@
 ### Nuove funzionalità
 - **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
 - Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.7] — 2026-03-19
+
+### Correzioni
+- **Nuova partita dopo abbandono** — risolto bug per cui riavviando una partita con lo stesso avversario il basket mostrava le carte della partita precedente. Aggiunta chiamata a `initGame()` all'inizio di `startOnlineGame` per resettare completamente lo stato di gioco prima di caricare i dati Firebase della nuova partita
 
 ---
 
@@ -75,6 +89,13 @@
 
 ---
 
+## [1.1.7] — 2026-03-19
+
+### Correzioni
+- **Nuova partita dopo abbandono** — risolto bug per cui riavviando una partita con lo stesso avversario il basket mostrava le carte della partita precedente. Aggiunta chiamata a `initGame()` all'inizio di `startOnlineGame` per resettare completamente lo stato di gioco prima di caricare i dati Firebase della nuova partita
+
+---
+
 ## [1.1.6] — 2026-03-19
 
 ### Modifiche regole
@@ -102,6 +123,13 @@
 ### Nuove funzionalità
 - **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
 - Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.7] — 2026-03-19
+
+### Correzioni
+- **Nuova partita dopo abbandono** — risolto bug per cui riavviando una partita con lo stesso avversario il basket mostrava le carte della partita precedente. Aggiunta chiamata a `initGame()` all'inizio di `startOnlineGame` per resettare completamente lo stato di gioco prima di caricare i dati Firebase della nuova partita
 
 ---
 
