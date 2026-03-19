@@ -8,8 +8,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, remove, onValue, off, query, orderByChild, limitToLast }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.1.3';
-let currentUser = null; // local mirror
+import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.1.3';
 import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1.1.3';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
@@ -152,7 +151,7 @@ function stopOnlineStats() {
 }
 
 export async function loadLobby(user) {
-  currentUser = user;
+  setCurrentUser(user);
   const name = user.displayName || user.email.split('@')[0];
   document.getElementById('lobby-username').textContent = name;
   const av = document.getElementById('lobby-avatar');
@@ -192,7 +191,7 @@ export async function loadLeaderboard() {
   tbody.innerHTML = '';
   users.forEach((u,i) => {
     const tr = document.createElement('tr');
-    if (u.uid === currentUser.uid) tr.className = 'lb-me';
+    if (u.uid === getCurrentUser().uid) tr.className = 'lb-me';
     tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
     tbody.appendChild(tr);
   });
@@ -276,7 +275,7 @@ getRedirectResult(auth).then(async result => {
 // ─── AUTH STATE ───────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   setAuthErr('');
-  currentUser = user; setCurrentUser(user);
+  setCurrentUser(user); setCurrentUser(user);
   if (user) { await ensureUserProfile(user); await loadLobby(user); }
   else { showScreen('screen-auth'); switchToLogin(); }
 });

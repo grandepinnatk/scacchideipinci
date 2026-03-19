@@ -12,8 +12,25 @@ export async function showQuickMatch() {
   showScreen('screen-quickmatch');
   document.getElementById('qm-status').textContent = 'Cercando un avversario...';
 
-  const myUid  = getCurrentUser().uid;
-  const myName = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
+  // Guard: aspetta che Firebase completi l'autenticazione
+  let user = getCurrentUser();
+  if (!user) {
+    await new Promise(resolve => {
+      const interval = setInterval(() => {
+        user = getCurrentUser();
+        if (user) { clearInterval(interval); resolve(); }
+      }, 200);
+      setTimeout(() => { clearInterval(interval); resolve(); }, 5000);
+    });
+    user = getCurrentUser();
+  }
+  if (!user) {
+    showScreen('screen-auth');
+    return;
+  }
+
+  const myUid  = user.uid;
+  const myName = user.displayName || user.email.split('@')[0];
 
   // ── Scrivo me stesso nella coda ──────────────────────────────────────────
   MP.queueRef  = ref(db, 'matchmaking/queue/' + myUid);
