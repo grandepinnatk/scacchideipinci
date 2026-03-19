@@ -2,6 +2,13 @@
 
 ---
 
+## [1.1.8] — 2026-03-20
+
+### Correzioni
+- **Partita rapida** — risolto bug per cui uno dei due giocatori veniva riportato alla schermata di login durante il matchmaking. Il problema era causato da `onAuthStateChanged` che si ri-attiva ad ogni rinnovo del token Firebase, chiamando `loadLobby` e `showScreen('screen-lobby')` anche mentre il giocatore era in attesa. Aggiunto guard: se `MP.isInQueue` o `MP.isOnline` sono attivi, il cambio di stato auth viene ignorato
+
+---
+
 ## [1.1.7] — 2026-03-19
 
 ### Correzioni
@@ -36,6 +43,13 @@
 ### Nuove funzionalità
 - **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
 - Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.8] — 2026-03-20
+
+### Correzioni
+- **Partita rapida** — risolto bug per cui uno dei due giocatori veniva riportato alla schermata di login durante il matchmaking. Il problema era causato da `onAuthStateChanged` che si ri-attiva ad ogni rinnovo del token Firebase, chiamando `loadLobby` e `showScreen('screen-lobby')` anche mentre il giocatore era in attesa. Aggiunto guard: se `MP.isInQueue` o `MP.isOnline` sono attivi, il cambio di stato auth viene ignorato
 
 ---
 
@@ -89,6 +103,13 @@
 
 ---
 
+## [1.1.8] — 2026-03-20
+
+### Correzioni
+- **Partita rapida** — risolto bug per cui uno dei due giocatori veniva riportato alla schermata di login durante il matchmaking. Il problema era causato da `onAuthStateChanged` che si ri-attiva ad ogni rinnovo del token Firebase, chiamando `loadLobby` e `showScreen('screen-lobby')` anche mentre il giocatore era in attesa. Aggiunto guard: se `MP.isInQueue` o `MP.isOnline` sono attivi, il cambio di stato auth viene ignorato
+
+---
+
 ## [1.1.7] — 2026-03-19
 
 ### Correzioni
@@ -123,6 +144,13 @@
 ### Nuove funzionalità
 - **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
 - Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.8] — 2026-03-20
+
+### Correzioni
+- **Partita rapida** — risolto bug per cui uno dei due giocatori veniva riportato alla schermata di login durante il matchmaking. Il problema era causato da `onAuthStateChanged` che si ri-attiva ad ogni rinnovo del token Firebase, chiamando `loadLobby` e `showScreen('screen-lobby')` anche mentre il giocatore era in attesa. Aggiunto guard: se `MP.isInQueue` o `MP.isOnline` sono attivi, il cambio di stato auth viene ignorato
 
 ---
 

@@ -1,6 +1,6 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.1.6';
+import { auth, db }           from './firebase.js?v=1.1.8';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
@@ -8,12 +8,12 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, remove, onValue, off, query, orderByChild, limitToLast }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.1.6';
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1.1.6';
+import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.1.8';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1.1.8';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1.1.6';
+         startOnlineGame } from './matchmaking.js?v=1.1.8';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
@@ -275,7 +275,12 @@ getRedirectResult(auth).then(async result => {
 // ─── AUTH STATE ───────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   setAuthErr('');
-  setCurrentUser(user); setCurrentUser(user);
-  if (user) { await ensureUserProfile(user); await loadLobby(user); }
+  setCurrentUser(user);
+  if (user) {
+    await ensureUserProfile(user);
+    // Non interrompere matchmaking o partita in corso durante un token refresh
+    if (MP.isInQueue || MP.isOnline) return;
+    await loadLobby(user);
+  }
   else { showScreen('screen-auth'); switchToLogin(); }
 });
