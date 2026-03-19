@@ -627,6 +627,13 @@
 }
 .los-dot-online  { background: #5dca8a; }
 .los-dot-ingame  { background: var(--gold); }
+
+.los-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--border2);
+    flex-shrink: 0;
+  }
 .los-label {
   font-size: 11px;
   color: var(--text2);
@@ -639,5 +646,5 @@
   font-weight: bold;
   font-family: 'BurbankBig', sans-serif;
   color: var(--text1);
-  margin-left: auto;
+  margin-left: 4px;
 }

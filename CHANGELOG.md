@@ -2,11 +2,25 @@
 
 ---
 
+## [1.1.4] — 2026-03-19
+
+### Correzioni UI
+- **Lobby** — aggiunta barra separatrice verticale tra i due indicatori di stato (Online / In gioco)
+
+---
+
 ## [1.1.3] — 2026-03-19
 
 ### Nuove funzionalità
 - **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
 - Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.4] — 2026-03-19
+
+### Correzioni UI
+- **Lobby** — aggiunta barra separatrice verticale tra i due indicatori di stato (Online / In gioco)
 
 ---
 
@@ -31,11 +45,25 @@
 
 ---
 
+## [1.1.4] — 2026-03-19
+
+### Correzioni UI
+- **Lobby** — aggiunta barra separatrice verticale tra i due indicatori di stato (Online / In gioco)
+
+---
+
 ## [1.1.3] — 2026-03-19
 
 ### Nuove funzionalità
 - **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
 - Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.4] — 2026-03-19
+
+### Correzioni UI
+- **Lobby** — aggiunta barra separatrice verticale tra i due indicatori di stato (Online / In gioco)
 
 ---
 
