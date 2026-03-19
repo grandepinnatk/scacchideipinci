@@ -1,6 +1,6 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.0.0';
+import { auth, db }           from './firebase.js?v=1.1.0';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
@@ -8,13 +8,13 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, remove, query, orderByChild, limitToLast }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.0.0';
+import { setCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.1.0';
 let currentUser = null; // local mirror
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1.0.0';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1.1.0';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1.0.0';
+         startOnlineGame } from './matchmaking.js?v=1.1.0';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {

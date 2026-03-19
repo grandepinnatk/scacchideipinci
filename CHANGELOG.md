@@ -2,6 +2,23 @@
 
 ---
 
+## [1.1.0] — 2026-03-19 🎨 Artwork definitivo
+
+### Release notes
+
+Questa release completa il corredo visivo del gioco. Tutte e 40 le illustrazioni dei pezzi sono state ridisegnate e sostituite con l'artwork definitivo, realizzato in uno stile pittorico ispirato ai maestri fiamminghi del XV e XVI secolo — Bruegel, Bosch, van Eyck. Ogni carta è ora accompagnata da una scena originale che evoca il personaggio e il suo ruolo nell'universo dei Pinci, con ambientazioni grottesche, popolate di creature ibride, scheletri, corvi e paesaggi in fiamme.
+
+Le illustrazioni coprono l'intera gamma dei 40 pezzi: dall'**Accenditorce** che illumina la notte con la torcia tra folla di fantasmi, al **Vendistracci** carico di cianfrusaglie che vaga per un paesaggio desolato; dal **Boia Tagliateste** che brandisce la lama insanguinata davanti a una folla urlante, alla **Sentinella Sicula** in armatura con simboli dell'isola; dal **Ratto di Fogna** — creatura metà uomo metà roditore nelle fognature medievali — al **Reggitrono**, portantina grottesca su cui siede un re sghignazzante.
+
+Le quattro carte completate in questa release — **Bevipozioni**, **Mangiapane**, **Srotolatappeti** e **Vendistracci** — chiudono il ciclo visivo avviato nella v1.0.0.
+
+### Modifiche tecniche
+- Sostituzione di tutte e 40 le immagini PNG nella cartella `img/`
+- Versione aggiornata a `1.1.0` in tutti i moduli
+- Nessuna modifica alla logica di gioco o al codice multiplayer
+
+---
+
 ## [1.0.0] — 2026-03-17 🎉 Prima release pubblica
 
 ### Gioco base
