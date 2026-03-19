@@ -2,6 +2,21 @@
 
 ---
 
+## [1.1.3] — 2026-03-19
+
+### Nuove funzionalità
+- **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
+- Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.3] — 2026-03-19
+
+### Correzioni
+- **Partita rapida** — risolto errore `Cannot read properties of null (reading 'uid')`: `currentUser` veniva letto prima che Firebase completasse l'autenticazione. Introdotta la funzione `getCurrentUser()` in `shared.js` che legge sempre il valore aggiornato al momento della chiamata, eliminando il problema di binding statico dei moduli ES
+
+---
+
 ## [1.1.2] — 2026-03-19
 
 ### Correzioni UI
@@ -13,6 +28,21 @@
 
 ### Correzioni UI
 - **Overlay carte campo** — sfondo dell'overlay `.pc-info` cambiato da gradiente nero a grigio piatto semitrasparente `rgba(40,38,35,0.75)`, più coerente con la palette del gioco
+
+---
+
+## [1.1.3] — 2026-03-19
+
+### Nuove funzionalità
+- **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
+- Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.3] — 2026-03-19
+
+### Correzioni
+- **Partita rapida** — risolto errore `Cannot read properties of null (reading 'uid')`: `currentUser` veniva letto prima che Firebase completasse l'autenticazione. Introdotta la funzione `getCurrentUser()` in `shared.js` che legge sempre il valore aggiornato al momento della chiamata, eliminando il problema di binding statico dei moduli ES
 
 ---
 

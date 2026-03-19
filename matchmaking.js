@@ -1,19 +1,19 @@
 // ─── matchmaking.js — quick match, invite, partita online, timer, forfeit ────
 
-import { db, auth }          from './firebase.js?v=1.1.0';
+import { db, auth }          from './firebase.js?v=1.1.3';
 import { ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { MP, currentUser, setCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.1.0';
+import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.1.3';
 import { G, POOL, SETTINGS, tierOf, initGame, renderAll, showWinner,
-         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.1.0';
+         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.1.3';
 
 // ─── QUICK MATCH ─────────────────────────────────────────────────────────────
 export async function showQuickMatch() {
   showScreen('screen-quickmatch');
   document.getElementById('qm-status').textContent = 'Cercando un avversario...';
 
-  const myUid  = currentUser.uid;
-  const myName = currentUser.displayName || currentUser.email.split('@')[0];
+  const myUid  = getCurrentUser().uid;
+  const myName = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
 
   // ── Scrivo me stesso nella coda ──────────────────────────────────────────
   MP.queueRef  = ref(db, 'matchmaking/queue/' + myUid);
@@ -122,7 +122,7 @@ export async function cancelQuickMatch() {
   MP.isInQueue = false;
   if (MP.pollTimer)  { clearTimeout(MP.pollTimer);  MP.pollTimer  = null; }
   if (MP.queueRef)   { await remove(MP.queueRef);   MP.queueRef   = null; }
-  const matchSlot = ref(db, 'matchmaking/match/' + currentUser.uid);
+  const matchSlot = ref(db, 'matchmaking/match/' + getCurrentUser().uid);
   await remove(matchSlot);
   showScreen('screen-lobby');
 }
@@ -133,22 +133,22 @@ export async function showInvite() {
   document.getElementById('join-err').textContent = '';
   document.getElementById('invite-waiting').style.display = 'none';
   const code   = Math.random().toString(36).substring(2,8).toUpperCase();
-  const p1name = currentUser.displayName || currentUser.email.split('@')[0];
+  const p1name = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
   document.getElementById('invite-code').textContent = code;
   MP.inviteRef = ref(db,'invites/'+code);
-  await set(MP.inviteRef, { hostUid:currentUser.uid, hostName:p1name, createdAt:Date.now(), status:'waiting' });
+  await set(MP.inviteRef, { hostUid:getCurrentUser().uid, hostName:p1name, createdAt:Date.now(), status:'waiting' });
   onValue(MP.inviteRef, async snap => {
     if (!snap.exists()) return;
     const data = snap.val();
-    if (data.status === 'joined' && data.guestUid !== currentUser.uid) {
+    if (data.status === 'joined' && data.guestUid !== getCurrentUser().uid) {
       off(MP.inviteRef);
       const gameId = push(ref(db,'games')).key;
       const state  = buildInitialGameState();
       await set(ref(db,'games/'+gameId), {
-        p1:{ uid:currentUser.uid, name:p1name }, p2:{ uid:data.guestUid, name:data.guestName },
+        p1:{ uid:getCurrentUser().uid, name:p1name }, p2:{ uid:data.guestUid, name:data.guestName },
         state, createdAt:Date.now(), status:'playing',
         turnDeadline:Date.now()+TURN_TIMEOUT_MS,
-        presence:{ [currentUser.uid]:Date.now(), [data.guestUid]:Date.now() }
+        presence:{ [getCurrentUser().uid]:Date.now(), [data.guestUid]:Date.now() }
       });
       await update(MP.inviteRef, { gameId });
       startOnlineGame(gameId, 0, data.guestName);
@@ -170,11 +170,11 @@ export async function joinByCode() {
     document.getElementById('join-err').textContent = 'Codice non trovato o scaduto'; return;
   }
   const invData   = invSnap.val();
-  if (invData.hostUid === currentUser.uid) {
+  if (invData.hostUid === getCurrentUser().uid) {
     document.getElementById('join-err').textContent = 'Non puoi unirti alla tua partita'; return;
   }
-  const guestName = currentUser.displayName || currentUser.email.split('@')[0];
-  await update(ref(db,'invites/'+code), { status:'joined', guestUid:currentUser.uid, guestName });
+  const guestName = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
+  await update(ref(db,'invites/'+code), { status:'joined', guestUid:getCurrentUser().uid, guestName });
   onValue(ref(db,'invites/'+code), snap => {
     if (snap.exists() && snap.val().gameId) {
       off(ref(db,'invites/'+code));
@@ -267,7 +267,7 @@ export async function startOnlineGame(gameId, myIndex, opponentName) {
   MP.opponentName  = opponentName;
   MP.gameRef       = ref(db,'games/'+gameId+'/state');
   // Save for reconnect
-  set(ref(db,'activeGame/'+currentUser.uid), { gameId, myIndex, opponentName });
+  set(ref(db,'activeGame/'+getCurrentUser().uid), { gameId, myIndex, opponentName });
 
   // Show game UI
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
@@ -276,7 +276,7 @@ export async function startOnlineGame(gameId, myIndex, opponentName) {
   document.getElementById('mp-bar-name').textContent = 'VS ' + opponentName;
 
   // Player name labels
-  const myName  = currentUser.displayName || currentUser.email.split('@')[0];
+  const myName  = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
   const p1label = myIndex === 0 ? myName : opponentName;
   const p2label = myIndex === 1 ? myName : opponentName;
   document.getElementById('sc1').querySelector('.sc-label').textContent = p1label;
@@ -291,7 +291,7 @@ export async function startOnlineGame(gameId, myIndex, opponentName) {
   }
 
   // Presence heartbeat every 20s
-  MP.presenceRef = ref(db,'games/'+gameId+'/presence/'+currentUser.uid);
+  MP.presenceRef = ref(db,'games/'+gameId+'/presence/'+getCurrentUser().uid);
   set(MP.presenceRef, Date.now());
   if (MP.heartbeatInterval) clearInterval(MP.heartbeatInterval);
   MP.heartbeatInterval = setInterval(() => set(MP.presenceRef, Date.now()), 20000);
@@ -347,7 +347,7 @@ export async function startOnlineGame(gameId, myIndex, opponentName) {
     // Grace period: ignore disconnection checks for first 60 seconds
     if (now - MP.gameStartTime < 60000) return;
     Object.entries(presence).forEach(([uid, ts]) => {
-      if (uid === currentUser.uid) return;
+      if (uid === getCurrentUser().uid) return;
       if (!ts || ts === 0) return; // opponent hasn't connected yet
       const age = now - ts;
       const dot    = document.getElementById('mp-dot');
@@ -461,26 +461,26 @@ export async function cleanupMP(returnToLobby = true) {
   if (MP.inviteRef)  { await remove(MP.inviteRef);    MP.inviteRef  = null; }
   if (MP.queueRef)   { await remove(MP.queueRef);     MP.queueRef   = null; }
   MP.isInQueue = false;
-  if (currentUser)  await remove(ref(db,'activeGame/'+currentUser.uid));
+  if (getCurrentUser())  await remove(ref(db,'activeGame/'+getCurrentUser().uid));
   MP.isOnline = false;
   MP.gameId   = null;
   const btnReset = document.getElementById('btn-reset');
   if (btnReset) { btnReset.textContent='Nuova partita'; btnReset.style.color=''; btnReset.style.borderColor=''; }
   document.getElementById('mp-bar').classList.remove('show');
   document.getElementById('app').style.display = 'none';
-  if (returnToLobby && currentUser) { if (authCallbacks.loadLeaderboard) authCallbacks.loadLeaderboard(); showScreen('screen-lobby'); if (authCallbacks.loadLobby) authCallbacks.loadLobby(currentUser); }
+  if (returnToLobby && getCurrentUser()) { if (authCallbacks.loadLeaderboard) authCallbacks.loadLeaderboard(); showScreen('screen-lobby'); if (authCallbacks.loadLobby) authCallbacks.loadLobby(getCurrentUser()); }
 }
 
 // ─── ELO UPDATE ──────────────────────────────────────────────────────────────
 export async function updateEloStats(state) {
-  if (!currentUser) return;
+  if (!getCurrentUser()) return;
   const won  = state.pts[MP.myIndex] >= SETTINGS.winPts || state.pts[MP.myIndex] > state.pts[1-MP.myIndex];
-  const snap = await get(ref(db,'users/'+currentUser.uid));
+  const snap = await get(ref(db,'users/'+getCurrentUser().uid));
   if (!snap.exists()) return;
   const d      = snap.val();
   const oldElo = d.elo || 1000;
   const newElo = Math.round(oldElo + 32*((won?1:0) - 1/(1+Math.pow(10,(1000-oldElo)/400))));
-  await update(ref(db,'users/'+currentUser.uid), {
+  await update(ref(db,'users/'+getCurrentUser().uid), {
     played:(d.played||0)+1, wins:(d.wins||0)+(won?1:0), losses:(d.losses||0)+(won?0:1), elo:newElo
   });
 }
@@ -545,8 +545,8 @@ function updateOnlineUI() {
     else if (G.turn !== MP.myIndex)  { btn.disabled=true;  btn.textContent='Turno avversario...'; }
     else { btn.disabled=(G.selected<0); btn.textContent='Gioca Carta'; }
   }
-  if (currentUser) {
-    const myName  = currentUser.displayName || currentUser.email.split('@')[0];
+  if (getCurrentUser()) {
+    const myName  = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
     const p1label = MP.myIndex===0 ? myName : MP.opponentName;
     const p2label = MP.myIndex===1 ? myName : MP.opponentName;
     const sc1 = document.getElementById('sc1')?.querySelector('.sc-label');

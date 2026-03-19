@@ -1,7 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser } from './shared.js?v=1.1.0';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.1.3';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -362,8 +362,8 @@ export function renderScore() {
   document.getElementById('sc1').classList.toggle('active', G.turn===0 && !G.over);
   document.getElementById('sc2').classList.toggle('active', G.turn===1 && !G.over);
   // Aggiorna nomi giocatori se in modalità online
-  if (MP.isOnline && currentUser) {
-    const myName = currentUser.displayName || currentUser.email.split('@')[0];
+  if (MP.isOnline && getCurrentUser()) {
+    const myName = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
     const p1name = MP.myIndex === 0 ? myName : MP.opponentName;
     const p2name = MP.myIndex === 1 ? myName : MP.opponentName;
     document.getElementById('sc1').querySelector('.sc-label').textContent = p1name;
@@ -378,7 +378,7 @@ export function renderBanner() {
   }
   let p1label, p2label;
   if (MP.isOnline) {
-    const myName = currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : 'Tu';
+    const myName = getCurrentUser() ? (getCurrentUser().displayName || getCurrentUser().email.split('@')[0]) : 'Tu';
     p1label = MP.myIndex === 0 ? myName : MP.opponentName;
     p2label = MP.myIndex === 1 ? myName : MP.opponentName;
   } else {

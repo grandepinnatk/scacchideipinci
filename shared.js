@@ -1,9 +1,10 @@
-export const APP_VERSION = "1.1.0";
+export const APP_VERSION = "1.1.3";
 
 // ─── shared.js — stato condiviso tra auth, matchmaking e game ────────────────
 
 export let currentUser = null;
 export function setCurrentUser(u) { currentUser = u; }
+export function getCurrentUser() { return currentUser; }
 
 export const MP = {
   isOnline: false,
