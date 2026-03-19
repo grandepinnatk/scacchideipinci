@@ -195,29 +195,45 @@
   }
   .piece-chip {
     border-radius: 5px;
-    padding: 3px 4px;
-    font-size: 9px;
-    line-height: 1.4;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
     width: 100%;
     height: 100%;
     box-sizing: border-box;
     overflow: hidden;
+    display: block;
+    padding: 0;
   }
-  .piece-chip.pc-p1 { background: var(--p1bg); border: 1px solid var(--p1border); }
-  .piece-chip.pc-p2 { background: var(--p2bg); border: 1px solid var(--p2border); }
-  .pc-img { width: 100%; flex: 1; min-height: 0; border-radius: 3px; overflow: hidden; background: #0f0e0d; }
+  .piece-chip.pc-p1 { background: transparent; border: 1.5px solid var(--p1border); }
+  .piece-chip.pc-p2 { background: transparent; border: 1.5px solid var(--p2border); }
+  .pc-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #0f0e0d;
+    display: block;
+  }
+  .pc-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
   .pc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .pc-info { width: 100%; flex-shrink: 0; }
-  .pc-name { font-weight: bold; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; width: 100%; }
-  .pc-p1 .pc-name { color: var(--p1); }
-  .pc-p2 .pc-name { color: var(--p2); }
-  .pc-vals { color: var(--text2); font-family: 'BurbankBig', monospace; font-size: 16px; font-weight: bold; text-align: center; margin-top: 1px; }
-  .pc-zone-hi { color: var(--gold); font-weight: bold; font-size: 22px; }
+  .pc-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 4px 4px 3px;
+    background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+    box-sizing: border-box;
+  }
+  .pc-name { font-weight: bold; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; width: 100%; color: #fff; }
+  .pc-p1 .pc-name { color: #fff; }
+  .pc-p2 .pc-name { color: #fff; }
+  .pc-vals { color: #fff; font-family: 'BurbankBig', monospace; font-size: 14px; font-weight: bold; text-align: center; margin-top: 0; line-height: 1.2; }
+  .pc-zone-hi { color: var(--gold); font-weight: bold; font-size: 16px; }
 
   /* BASKET card with illustration */
   .bc-img { width: 100%; aspect-ratio: 3/4; display: block; overflow: hidden; border-radius: 4px 4px 0 0; background: #0f0e0d; }
