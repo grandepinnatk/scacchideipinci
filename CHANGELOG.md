@@ -2,6 +2,20 @@
 
 ---
 
+## [1.1.1] — 2026-03-19
+
+### Correzioni UI
+- **Overlay carte campo** — sfondo dell'overlay `.pc-info` cambiato da gradiente nero a grigio piatto semitrasparente `rgba(40,38,35,0.75)`, più coerente con la palette del gioco
+
+---
+
+## [1.1.1] — 2026-03-19
+
+### Correzioni UI
+- Overlay `.pc-info` nel campo di gioco: sostituito il gradiente nero con un grigio piatto semitrasparente (`rgba(40,38,35,0.75)`) per un aspetto più pulito e coerente con la palette del gioco
+
+---
+
 ## [1.1.0] — 2026-03-19 🎨 Artwork definitivo
 
 ### Release notes

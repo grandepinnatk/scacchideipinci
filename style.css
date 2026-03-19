@@ -226,7 +226,7 @@
     left: 0;
     right: 0;
     padding: 4px 4px 3px;
-    background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+    background: rgba(40,38,35,0.75);
     box-sizing: border-box;
   }
   .pc-name { font-weight: bold; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; width: 100%; color: #fff; }
