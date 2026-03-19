@@ -1,7 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser, getCurrentUser } from './shared.js?v=1.1.3';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.1.6';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -204,10 +204,11 @@ function resolveCombats() {
     const z = zoneOf(c);
     const v1 = slot.p1.z[z];
     const v2 = slot.p2.z[z];
+    const pts = (c === 2) ? 2 : 1; // Sala del Re (casella 3) vale 2 punti
     let winner = 0; // 0=pareggio, 1=G1, 2=G2
-    if (v1 > v2) { G.pts[0]++; winner = 1; }
-    else if (v2 > v1) { G.pts[1]++; winner = 2; }
-    results.push({ cell: c, zone: z, p1: slot.p1, p2: slot.p2, v1, v2, winner });
+    if (v1 > v2) { G.pts[0] += pts; winner = 1; }
+    else if (v2 > v1) { G.pts[1] += pts; winner = 2; }
+    results.push({ cell: c, zone: z, p1: slot.p1, p2: slot.p2, v1, v2, winner, pts });
   }
   return results;
 }
@@ -238,7 +239,7 @@ export function doInsert() {
   const pStep = G.pieceStep + 1;
 
   // Log inserimento
-  addLog(`<span class="${G.turn===0?'lc-p1':'lc-p2'}">${pName}</span> inserisce pezzo <b>${pStep}/2</b>: <b>${piece.name}</b> <span class="lc-dim">[C:${piece.z[0]} R:${piece.z[1]} V:${piece.z[2]}]</span>`);
+  addLog(`<span class="${G.turn===0?'lc-p1':'lc-p2'}">${pName}</span> inserisce pezzo <b>${pStep}/${G.turnNum===1?(G.turn===0?1:2):2}</b>: <b>${piece.name}</b> <span class="lc-dim">[C:${piece.z[0]} R:${piece.z[1]} V:${piece.z[2]}]</span>`);
 
   // Inserisci nella pipe
   insertIntoPipe(piece);
@@ -249,9 +250,9 @@ export function doInsert() {
     const zoneName = ZONE_NAMES[f.zone];
     let msg;
     if (f.winner === 1) {
-      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} <i>${zoneName}</i>: <span class="lc-p1">${f.p1.name}</span> <b>${f.v1}</b> > <span class="lc-p2">${f.p2.name}</span> ${f.v2} → <span class="lc-gold">+1 G1</span>`;
+      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} <i>${zoneName}</i>: <span class="lc-p1">${f.p1.name}</span> <b>${f.v1}</b> > <span class="lc-p2">${f.p2.name}</span> ${f.v2} → <span class="lc-gold">+${f.pts} G1</span>`;
     } else if (f.winner === 2) {
-      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} <i>${zoneName}</i>: <span class="lc-p2">${f.p2.name}</span> <b>${f.v2}</b> > <span class="lc-p1">${f.p1.name}</span> ${f.v1} → <span class="lc-gold">+1 G2</span>`;
+      msg = `<span class="lc-gold">⚔</span> Casella ${f.cell+1} <i>${zoneName}</i>: <span class="lc-p2">${f.p2.name}</span> <b>${f.v2}</b> > <span class="lc-p1">${f.p1.name}</span> ${f.v1} → <span class="lc-gold">+${f.pts} G2</span>`;
     } else {
       msg = `<span class="lc-dim">≈</span> Casella ${f.cell+1} <i>${zoneName}</i>: ${f.p1.name} ${f.v1} = ${f.p2.name} ${f.v2} — <span class="lc-dim">pareggio</span>`;
     }
@@ -264,9 +265,9 @@ export function doInsert() {
   G.selected = -1;
 
   // Avanza il passo del turno
-  // Turno 1 speciale: ogni giocatore inserisce solo 1 pezzo
+  // Turno 1 speciale: G1 inserisce 1 pezzo, G2 inserisce 2 pezzi
   const isFirstTurn = G.turnNum === 1;
-  const piecesThisTurn = isFirstTurn ? 1 : 2;
+  const piecesThisTurn = isFirstTurn ? (G.turn === 0 ? 1 : 2) : 2;
 
   if (G.pieceStep < piecesThisTurn - 1) {
     G.pieceStep++;
@@ -275,7 +276,7 @@ export function doInsert() {
     if (isFirstTurn) {
       G.firstTurnDone[G.turn] = true;
       G.turn = 1 - G.turn;
-      // Se entrambi hanno giocato il loro pezzo al turno 1, inizia il turno 2
+      // Se entrambi hanno completato il turno 1, inizia il turno 2
       if (G.firstTurnDone[0] && G.firstTurnDone[1]) {
         G.turnNum = 2;
         G.turn = 0;
@@ -389,7 +390,7 @@ export function renderBanner() {
     ? `<span class="hl-p1">${p1label}</span>`
     : `<span class="hl-p2">${p2label}</span>`;
   const step = G.pieceStep + 1;
-  const total = G.turnNum === 1 ? 1 : 2;
+  const total = G.turnNum === 1 ? (G.turn === 0 ? 1 : 2) : 2;
   document.getElementById('tbanner').innerHTML =
     `${pn} — inserisci pezzo <b>${step} di ${total}</b>`;
 }
@@ -453,7 +454,7 @@ export function renderField() {
 }
 
 export function renderPhaseSlots() {
-  const totalSlots = G.turnNum === 1 ? 1 : 2;
+  const totalSlots = G.turnNum === 1 ? (G.turn === 0 ? 1 : 2) : 2;
   const html = buildPhaseSlotsHTML(totalSlots);
   // Aggiorna entrambi i contenitori (mobile nel banner-row, desktop sotto il campo)
   ['phase-slots', 'phase-slots-desktop'].forEach(id => {

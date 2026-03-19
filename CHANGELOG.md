@@ -2,6 +2,21 @@
 
 ---
 
+## [1.1.6] — 2026-03-19
+
+### Modifiche regole
+- **Sala del Re (casella 3)** — il confronto in questa casella vale ora 2 punti invece di 1. Il log di gioco mostra correttamente `+1` o `+2` in base alla casella in cui avviene il combattimento
+
+---
+
+## [1.1.5] — 2026-03-19
+
+### Modifiche regole
+- **Turno 1** — nuova regola: il Giocatore 1 inserisce 1 carta, il Giocatore 2 inserisce 2 carte. Dal turno 2 in poi entrambi inseriscono 2 carte come in precedenza
+- Aggiornati banner, phase indicator e log di gioco per riflettere il conteggio corretto al turno 1
+
+---
+
 ## [1.1.4] — 2026-03-19
 
 ### Correzioni UI
@@ -14,6 +29,21 @@
 ### Nuove funzionalità
 - **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
 - Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.6] — 2026-03-19
+
+### Modifiche regole
+- **Sala del Re (casella 3)** — il confronto in questa casella vale ora 2 punti invece di 1. Il log di gioco mostra correttamente `+1` o `+2` in base alla casella in cui avviene il combattimento
+
+---
+
+## [1.1.5] — 2026-03-19
+
+### Modifiche regole
+- **Turno 1** — nuova regola: il Giocatore 1 inserisce 1 carta, il Giocatore 2 inserisce 2 carte. Dal turno 2 in poi entrambi inseriscono 2 carte come in precedenza
+- Aggiornati banner, phase indicator e log di gioco per riflettere il conteggio corretto al turno 1
 
 ---
 
@@ -45,6 +75,21 @@
 
 ---
 
+## [1.1.6] — 2026-03-19
+
+### Modifiche regole
+- **Sala del Re (casella 3)** — il confronto in questa casella vale ora 2 punti invece di 1. Il log di gioco mostra correttamente `+1` o `+2` in base alla casella in cui avviene il combattimento
+
+---
+
+## [1.1.5] — 2026-03-19
+
+### Modifiche regole
+- **Turno 1** — nuova regola: il Giocatore 1 inserisce 1 carta, il Giocatore 2 inserisce 2 carte. Dal turno 2 in poi entrambi inseriscono 2 carte come in precedenza
+- Aggiornati banner, phase indicator e log di gioco per riflettere il conteggio corretto al turno 1
+
+---
+
 ## [1.1.4] — 2026-03-19
 
 ### Correzioni UI
@@ -57,6 +102,21 @@
 ### Nuove funzionalità
 - **Contatore utenti in lobby** — sopra le statistiche personali vengono ora mostrati in tempo reale il numero di utenti online (punto verde) e il numero di partite in corso (punto oro), aggiornati via Firebase listener
 - Al login viene scritto `lastSeen` sul profilo utente per rilevare la presenza attiva
+
+---
+
+## [1.1.6] — 2026-03-19
+
+### Modifiche regole
+- **Sala del Re (casella 3)** — il confronto in questa casella vale ora 2 punti invece di 1. Il log di gioco mostra correttamente `+1` o `+2` in base alla casella in cui avviene il combattimento
+
+---
+
+## [1.1.5] — 2026-03-19
+
+### Modifiche regole
+- **Turno 1** — nuova regola: il Giocatore 1 inserisce 1 carta, il Giocatore 2 inserisce 2 carte. Dal turno 2 in poi entrambi inseriscono 2 carte come in precedenza
+- Aggiornati banner, phase indicator e log di gioco per riflettere il conteggio corretto al turno 1
 
 ---
 
