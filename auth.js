@@ -1,6 +1,6 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.2.3';
+import { auth, db }           from './firebase.js?v=1.2.6';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
@@ -8,12 +8,12 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, remove, onValue, off, query, orderByChild, limitToLast }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.2.3';
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings } from './game.js?v=1.2.3';
+import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.2.6';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.2.6';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1.2.3';
+         startOnlineGame } from './matchmaking.js?v=1.2.6';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
@@ -176,6 +176,17 @@ export async function loadLobby(user) {
     }
     await remove(ref(db,'activeGame/'+user.uid));
   }
+  // Carica configurazione admin (punteggio vittoria, valori carte)
+  try {
+    const adminSnap  = await get(ref(db,'admin/settings'));
+    const piecesSnap = await get(ref(db,'admin/pieces'));
+    applyAdminConfig({
+      winPts:   adminSnap.exists()  ? adminSnap.val().winPts           : null,
+      weights:  adminSnap.exists()  ? adminSnap.val().weights          : null,
+      pieces:   piecesSnap.exists() ? Object.values(piecesSnap.val()) : null,
+    });
+  } catch(e) { /* usa valori default */ }
+
   loadLeaderboard();
   startOnlineStats();
   showScreen('screen-lobby');

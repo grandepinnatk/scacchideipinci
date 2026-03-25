@@ -38,7 +38,7 @@
     font-style: normal;
   }
 </style>
-<link rel="stylesheet" href="style.css?v=1.2.3">
+<link rel="stylesheet" href="style.css?v=1.2.6">
 </head>
 <body>
 
@@ -385,7 +385,7 @@
       <div class="settings-section">PUNTEGGIO VITTORIA</div>
       <div class="setting-row">
         <div class="setting-label">Punti per vincere<small>Default: 30</small></div>
-        <input type="range" class="rarity-slider" id="win-slider" min="10" max="100" step="5" value="30" oninput="document.getElementById('win-val').textContent=this.value">
+        <input type="range" class="rarity-slider" id="win-slider" min="10" max="100" step="5" value="50" oninput="document.getElementById('win-val').textContent=this.value">
         <div class="rarity-val" id="win-val">30</div>
       </div>
     </div>
@@ -421,6 +421,6 @@
 </div>
 
 <!-- Moduli caricati in ordine: firebase → shared → game → matchmaking → auth -->
-<script type="module" src="auth.js?v=1.2.3"></script>
+<script type="module" src="auth.js?v=1.2.6"></script>
 </body>
 </html>

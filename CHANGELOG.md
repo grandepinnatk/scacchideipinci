@@ -9,6 +9,57 @@
 
 ---
 
+## [1.2.6] — 2026-03-25
+
+### Nuove funzionalità
+- **Console admin — Pesi rarità** — nel pannello Impostazioni sono ora configurabili i pesi per ciascuna rarità (Leggendario, Epico, Raro, Comune). Il peso determina la probabilità che una carta di quella rarità appaia nel basket comune: peso più alto = più frequente. Range 0–30, default: Leggendario 1, Epico 3, Raro 6, Comune 12. Salvati su Firebase e applicati al login
+
+---
+
+## [1.2.5] — 2026-03-25
+
+### Nuove funzionalità
+- **Console di amministrazione** (`admin.html`) — pannello accessibile solo agli amministratori, con tre sezioni:
+  - **Carte** — modifica i punteggi C/R/V e la forza di ogni carta; la rarità si aggiorna automaticamente in base alla forza. Salvataggio su Firebase
+  - **Impostazioni** — imposta il punteggio vittoria (10–200, step 5). Salvataggio su Firebase
+  - **Amministratori** — aggiungi/rimuovi email con ruolo admin. Super admin fisso: `grandepinna.tk@gmail.com`
+- Al login, il gioco carica automaticamente la configurazione admin da Firebase (carte e punteggio vittoria) sovrascrivendo i valori di default
+
+---
+
+## [1.2.4] — 2026-03-25
+
+### Modifiche regole
+- **Punteggio vittoria** — portato da 30 a 50 punti
+
+---
+
+## [1.2.6] — 2026-03-25
+
+### Nuove funzionalità
+- **Console admin — Pesi rarità** — nel pannello Impostazioni sono ora configurabili i pesi per ciascuna rarità (Leggendario, Epico, Raro, Comune). Il peso determina la probabilità che una carta di quella rarità appaia nel basket comune: peso più alto = più frequente. Range 0–30, default: Leggendario 1, Epico 3, Raro 6, Comune 12. Salvati su Firebase e applicati al login
+
+---
+
+## [1.2.5] — 2026-03-25
+
+### Nuove funzionalità
+- **Console di amministrazione** (`admin.html`) — pannello accessibile solo agli amministratori, con tre sezioni:
+  - **Carte** — modifica i punteggi C/R/V e la forza di ogni carta; la rarità si aggiorna automaticamente in base alla forza. Salvataggio su Firebase
+  - **Impostazioni** — imposta il punteggio vittoria (10–200, step 5). Salvataggio su Firebase
+  - **Amministratori** — aggiungi/rimuovi email con ruolo admin. Super admin fisso: `grandepinna.tk@gmail.com`
+- Al login, il gioco carica automaticamente la configurazione admin da Firebase (carte e punteggio vittoria) sovrascrivendo i valori di default
+
+---
+
+## [1.2.4] — 2026-03-25
+
+### Modifiche regole
+- **Punteggio vittoria** — portato a 50 punti (era 30). Il punteggio di abbandono usa già `SETTINGS.winPts` dinamicamente, quindi è aggiornato di conseguenza
+- Slider nel pannello impostazioni aggiornato con valore di default 50
+
+---
+
 ## [1.2.3] — 2026-03-25
 
 ### Correzioni

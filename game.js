@@ -1,7 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.3';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.6';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -117,7 +117,7 @@ export function tierOf(val) {
 // Impostazioni correnti (modificabili dal menu)
 export let SETTINGS = {
   weights: { l:1, e:3, r:6, c:12 },
-  winPts: 30,
+  winPts: 50,
 };
 
 // Sovrascritture valori pezzi (dichiarate qui, usate da buildPool)
@@ -167,9 +167,30 @@ export function initGame() {
     selected:  -1,
     log:       [],
     over:      false,
-    firstTurnDone: [false, false], // tracks if each player has played their 1 piece in turn 1
+    firstTurnDone: [false, false],
   };
   renderAll();
+}
+
+// Applica configurazione admin da Firebase (se disponibile)
+// Chiamata da auth.js dopo il login
+export function applyAdminConfig(config) {
+  if (!config) return;
+  if (config.winPts) SETTINGS.winPts = config.winPts;
+  if (config.weights) {
+    // Aggiorna i pesi di rarità
+    Object.assign(SETTINGS.weights, config.weights);
+  }
+  if (config.pieces && Array.isArray(config.pieces)) {
+    // Aggiorna ALL_PIECES con i valori admin
+    config.pieces.forEach(p => {
+      const found = ALL_PIECES.find(ap => ap.name === p.name);
+      if (found) { found.z = p.z; found.val = p.val; }
+    });
+  }
+  // Rigenera sempre il POOL (riflette sia i nuovi valori carte che i nuovi pesi)
+  POOL.length = 0;
+  POOL.push(...buildPool());
 }
 
 // ─── LOGICA DI GIOCO ─────────────────────────────────────────────────────────
