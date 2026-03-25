@@ -151,6 +151,23 @@
   .cell.zone-villaggio { background: rgba(50, 110, 60, 0.18); border-color: rgba(80, 160, 80, 0.35); }
   .cell.combat-flash { box-shadow: 0 0 0 2px var(--gold); border-color: var(--gold); }
 
+@keyframes slide-right {
+    0%   { transform: translateX(-18px); opacity: 0; }
+    60%  { transform: translateX(3px);   opacity: 1; }
+    100% { transform: translateX(0);     opacity: 1; }
+  }
+  @keyframes slide-left {
+    0%   { transform: translateX(18px);  opacity: 0; }
+    60%  { transform: translateX(-3px);  opacity: 1; }
+    100% { transform: translateX(0);     opacity: 1; }
+  }
+  .field-push-right .lane-p1 .piece-chip {
+    animation: slide-right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .field-push-left .lane-p2 .piece-chip {
+    animation: slide-left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   .cell-num {
     font-size: 13px; color: var(--text3); font-family: 'BurbankBig', monospace;
     text-align: center; padding: 2px 0; flex-shrink: 0;
@@ -290,12 +307,19 @@
     border-radius: var(--radius);
     padding: 6px 5px;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    transition: border-color 0.15s, background 0.15s, transform 0.15s;
     user-select: none;
     text-align: center;
+    touch-action: pan-x;
   }
   .bcard:hover { border-color: var(--border2); background: var(--bg3); }
-  .bcard:active { transform: scale(0.97); }
+  .bcard:active { transform: scale(0.96); }
+  @keyframes swipe-play {
+    0%   { transform: translateY(0)    scale(1);    opacity: 1; }
+    50%  { transform: translateY(-20px) scale(1.05); opacity: 0.6; }
+    100% { transform: translateY(0)    scale(1);    opacity: 1; }
+  }
+  .bcard.playing { animation: swipe-play 0.28s ease-out; }
   .bcard.selected { border-color: var(--gold); background: var(--goldbg); }
   .bcard.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
   .bc-name { font-size: 16px; font-weight: bold; color: var(--text); margin-bottom: 4px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }

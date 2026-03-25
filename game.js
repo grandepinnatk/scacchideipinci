@@ -1,7 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser, getCurrentUser } from './shared.js?v=1.1.8';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.0';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -243,6 +243,15 @@ export function doInsert() {
 
   // Inserisci nella pipe
   insertIntoPipe(piece);
+
+  // Classe animazione scorrimento carte sul campo
+  const fieldEl = document.getElementById('field');
+  const slideClass = G.turn === 0 ? 'field-push-right' : 'field-push-left';
+  if (fieldEl) {
+    fieldEl.classList.remove('field-push-right', 'field-push-left');
+    fieldEl.classList.add(slideClass);
+    setTimeout(() => fieldEl.classList.remove(slideClass), 400);
+  }
 
   // Risolvi combattimenti
   const fights = resolveCombats();
@@ -504,7 +513,40 @@ export function renderBasket() {
         <span class="bcv" title="Villaggio">V:&nbsp;&nbsp;${p.z[2]}</span>
       </div>
       <div style="margin-top:4px"><span class="rb ${tierCls}">${tierLbl}</span></div>`;
+    // Click singolo → seleziona
     d.onclick = () => selectCard(i);
+
+    // Doppio click (PC) → seleziona + gioca
+    d.ondblclick = (e) => {
+      e.preventDefault();
+      selectCard(i);
+      d.classList.add('playing');
+      d.addEventListener('animationend', () => d.classList.remove('playing'), { once: true });
+      setTimeout(() => { if (G.selected === i) doInsert(); }, 200);
+    };
+
+    // Swipe verso l'alto (mobile/tablet) → seleziona + gioca
+    let touchStartY = 0;
+    let touchStartX = 0;
+    d.addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    d.addEventListener('touchend', (e) => {
+      const dy = touchStartY - e.changedTouches[0].clientY;
+      const dx = Math.abs(touchStartX - e.changedTouches[0].clientX);
+      // Swipe verso l'alto: almeno 40px verticali, meno di 60px orizzontali
+      if (dy > 40 && dx < 60) {
+        e.preventDefault();
+        selectCard(i);
+        d.classList.add('playing');
+        d.addEventListener('animationend', () => d.classList.remove('playing'), { once: true });
+        setTimeout(() => {
+          if (G.selected === i) doInsert();
+        }, 50);
+      }
+    }, { passive: true });
+
     el.appendChild(d);
   });
   document.getElementById('basket-hint').textContent = G.over ? '' : 'Clicca per selezionare';
