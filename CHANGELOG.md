@@ -9,6 +9,13 @@
 
 ---
 
+## [1.3.1] — 2026-03-26
+
+### Correzioni
+- **Classifica lobby** — aggiunto logging in console (`[Leaderboard] Utenti trovati: N [...]`) per diagnosticare quanti utenti vengono letti da Firebase. Aggiunta gestione errori con messaggio visivo in caso di problemi di lettura
+
+---
+
 ## [1.3.0] — 2026-03-26
 
 ### Modifiche UI
@@ -59,6 +66,13 @@
 
 ### Modifiche regole
 - **Punteggio vittoria** — portato da 30 a 50 punti
+
+---
+
+## [1.3.1] — 2026-03-26
+
+### Correzioni
+- **Classifica lobby** — aggiunto logging in console (`[Leaderboard] Utenti trovati: N [...]`) per diagnosticare quanti utenti vengono letti da Firebase. Aggiunta gestione errori con messaggio visivo in caso di problemi di lettura
 
 ---
 

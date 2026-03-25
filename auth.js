@@ -1,6 +1,6 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.3.0';
+import { auth, db }           from './firebase.js?v=1.3.1';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
@@ -8,12 +8,12 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, remove, onValue, off, query }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.3.0';
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.3.0';
+import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.3.1';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.3.1';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1.3.0';
+         startOnlineGame } from './matchmaking.js?v=1.3.1';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
@@ -192,23 +192,36 @@ export async function loadLobby(user) {
   showScreen('screen-lobby');
 }
 export async function loadLeaderboard() {
-  // Legge tutti gli utenti e ordina lato client — più robusto di orderByChild
-  // che richiede che tutti i record abbiano il campo elo definito come numero
-  const snap = await get(ref(db,'users'));
-  if (!snap.exists()) return;
-  const users = [];
-  snap.forEach(c => users.push({ uid:c.key, ...c.val() }));
-  // Ordina per ELO decrescente e prende i top 10
-  users.sort((a,b) => (b.elo||1000) - (a.elo||1000));
-  const top10 = users.slice(0, 10);
   const tbody = document.getElementById('lb-body');
-  tbody.innerHTML = '';
-  top10.forEach((u,i) => {
-    const tr = document.createElement('tr');
-    if (getCurrentUser() && u.uid === getCurrentUser().uid) tr.className = 'lb-me';
-    tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
-    tbody.appendChild(tr);
-  });
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#5a534e;padding:10px">Caricamento…</td></tr>';
+  try {
+    const snap = await get(ref(db,'users'));
+    if (!snap.exists()) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#5a534e;padding:10px">Nessun giocatore</td></tr>';
+      return;
+    }
+    const users = [];
+    snap.forEach(c => {
+      const v = c.val();
+      // Includi solo utenti con displayName definito (profili completi)
+      if (v && (v.displayName || v.elo)) {
+        users.push({ uid: c.key, ...v });
+      }
+    });
+    console.log('[Leaderboard] Utenti trovati:', users.length, users.map(u => u.displayName));
+    users.sort((a,b) => (b.elo||1000) - (a.elo||1000));
+    const top10 = users.slice(0, 10);
+    tbody.innerHTML = '';
+    top10.forEach((u,i) => {
+      const tr = document.createElement('tr');
+      if (getCurrentUser() && u.uid === getCurrentUser().uid) tr.className = 'lb-me';
+      tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch(e) {
+    console.error('[Leaderboard] Errore:', e);
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#e05555;padding:10px">Errore: ${e.message}</td></tr>`;
+  }
 }
 
 // ─── EXPOSE TO WINDOW ────────────────────────────────────────────────────────
