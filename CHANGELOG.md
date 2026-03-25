@@ -2,6 +2,21 @@
 
 ---
 
+## [1.3.5] — 2026-03-26
+
+### Nuove funzionalità
+- **Pagina classifica completa** (`leaderboard.html`) — mostra tutti i giocatori registrati ordinati per ELO, con medaglie per i top 3, evidenziazione della propria riga e contatore totale giocatori. Pulsante "← Lobby" per tornare indietro
+- **Link in lobby** — il titolo "CLASSIFICA" nella lobby mostra un link "Vedi completa →" che apre `leaderboard.html`
+
+---
+
+## [1.3.4] — 2026-03-26
+
+### Correzioni
+- **Scroll pagina** — risolto bug per cui le pagine lunghe (lobby, autenticazione) venivano tagliate in alto e non era possibile scorrere. Il problema era `align-items:center` su `.screen.show` con `position:fixed`: quando il contenuto superava l'altezza della viewport, il flex center lo centrava rispetto all'altezza fissa tagliando la parte superiore. Corretto con `align-items:flex-start` e `margin:auto` sui box interni per mantenere la centratura quando c'è spazio sufficiente
+
+---
+
 ## [1.3.3] — 2026-03-26
 
 ### Modifiche UI

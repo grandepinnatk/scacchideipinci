@@ -38,7 +38,7 @@
     font-style: normal;
   }
 </style>
-<link rel="stylesheet" href="style.css?v=1.3.3">
+<link rel="stylesheet" href="style.css?v=1.3.5">
 </head>
 <body>
 
@@ -46,8 +46,8 @@
 <!-- AUTH / LOBBY SCREENS -->
 <style>
 .screen { display:none; position:fixed; inset:0; background:var(--bg); z-index:200; overflow-y:auto; padding:24px 16px; }
-.screen.show { display:flex; align-items:center; justify-content:center; }
-.auth-box { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:32px 28px; width:100%; max-width:400px; }
+.screen.show { display:flex; align-items:flex-start; justify-content:center; }
+.auth-box { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:32px 28px; width:100%; max-width:400px; margin:auto; }
 .auth-title { font-size:28px; font-weight:500; color:var(--text); margin-bottom:6px; text-align:center; font-family:'BurbankBig',sans-serif; }
 .auth-sub { font-size:13px; color:var(--text2); text-align:center; margin-bottom:24px; }
 .auth-input { width:100%; padding:10px 14px; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-size:14px; font-family:'BurbankBig',sans-serif; margin-bottom:12px; box-sizing:border-box; }
@@ -68,7 +68,7 @@
 .auth-err { color:#ff6b6b; font-size:12px; text-align:center; margin-bottom:10px; min-height:18px; }
 
 /* LOBBY */
-.lobby-box { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:28px 24px; width:100%; max-width:600px; }
+.lobby-box { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:28px 24px; width:100%; max-width:600px; margin:auto; }
 .lobby-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
 .lobby-title { font-size:26px; font-family:'BurbankBig',sans-serif; color:var(--text); }
 .lobby-user { display:flex; align-items:center; gap:10px; }
@@ -195,7 +195,7 @@
       <div class="lobby-btn-sec" id="btn-local">🖥 Gioca in locale</div>
     </div>
 
-    <div class="lobby-section">CLASSIFICA</div>
+    <div class="lobby-section" style="display:flex;align-items:center;justify-content:space-between;">CLASSIFICA <a href="leaderboard.html" style="font-size:11px;color:var(--gold);text-decoration:none;letter-spacing:0.04em;">Vedi completa →</a></div>
     <table class="lb-table">
       <thead><tr><th class="lb-rank">#</th><th>Giocatore</th><th>ELO</th><th>V</th><th>P</th></tr></thead>
       <tbody id="lb-body"></tbody>
@@ -424,6 +424,6 @@
 </div>
 
 <!-- Moduli caricati in ordine: firebase → shared → game → matchmaking → auth -->
-<script type="module" src="auth.js?v=1.3.3"></script>
+<script type="module" src="auth.js?v=1.3.5"></script>
 </body>
 </html>
