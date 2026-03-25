@@ -1,19 +1,19 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.2.8';
+import { auth, db }           from './firebase.js?v=1.3.0';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
          onAuthStateChanged, signOut, updateProfile }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { ref, set, get, update, remove, onValue, off, query, orderByChild, limitToLast }
+import { ref, set, get, update, remove, onValue, off, query }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.2.8';
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.2.8';
+import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.3.0';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.3.0';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1.2.8';
+         startOnlineGame } from './matchmaking.js?v=1.3.0';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
@@ -192,17 +192,20 @@ export async function loadLobby(user) {
   showScreen('screen-lobby');
 }
 export async function loadLeaderboard() {
-  const q = query(ref(db,'users'), orderByChild('elo'), limitToLast(10));
-  const snap = await get(q);
+  // Legge tutti gli utenti e ordina lato client — più robusto di orderByChild
+  // che richiede che tutti i record abbiano il campo elo definito come numero
+  const snap = await get(ref(db,'users'));
   if (!snap.exists()) return;
   const users = [];
   snap.forEach(c => users.push({ uid:c.key, ...c.val() }));
-  users.sort((a,b) => (b.elo||1000)-(a.elo||1000));
+  // Ordina per ELO decrescente e prende i top 10
+  users.sort((a,b) => (b.elo||1000) - (a.elo||1000));
+  const top10 = users.slice(0, 10);
   const tbody = document.getElementById('lb-body');
   tbody.innerHTML = '';
-  users.forEach((u,i) => {
+  top10.forEach((u,i) => {
     const tr = document.createElement('tr');
-    if (u.uid === getCurrentUser().uid) tr.className = 'lb-me';
+    if (getCurrentUser() && u.uid === getCurrentUser().uid) tr.className = 'lb-me';
     tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
     tbody.appendChild(tr);
   });

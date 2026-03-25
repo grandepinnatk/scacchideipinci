@@ -9,6 +9,20 @@
 
 ---
 
+## [1.3.0] — 2026-03-26
+
+### Modifiche UI
+- **Lobby** — la classifica viene ora mostrata sotto i pulsanti Partita rapida, Invita amico e Gioca in locale
+
+---
+
+## [1.2.9] — 2026-03-25
+
+### Correzioni
+- **Classifica lobby** — mostrava solo un giocatore. La causa era la query `orderByChild('elo').limitToLast(10)` che richiede che **tutti** gli utenti abbiano il campo `elo` definito come numero nello stesso formato — condizione non sempre garantita. Riscritta per leggere tutti gli utenti e ordinarli lato client, prendendo poi i top 10
+
+---
+
 ## [1.2.8] — 2026-03-25
 
 ### Correzioni
@@ -45,6 +59,20 @@
 
 ### Modifiche regole
 - **Punteggio vittoria** — portato da 30 a 50 punti
+
+---
+
+## [1.3.0] — 2026-03-26
+
+### Modifiche UI
+- **Lobby** — la classifica viene ora mostrata sotto i pulsanti Partita rapida, Invita amico e Gioca in locale
+
+---
+
+## [1.2.9] — 2026-03-25
+
+### Correzioni
+- **Classifica lobby** — mostrava solo un giocatore. La causa era la query `orderByChild('elo').limitToLast(10)` che richiede che **tutti** gli utenti abbiano il campo `elo` definito come numero nello stesso formato — condizione non sempre garantita. Riscritta per leggere tutti gli utenti e ordinarli lato client, prendendo poi i top 10
 
 ---
 
