@@ -1,11 +1,11 @@
 // ─── matchmaking.js — quick match, invite, partita online, timer, forfeit ────
 
-import { db, auth }          from './firebase.js?v=1.2.6';
+import { db, auth }          from './firebase.js?v=1.2.8';
 import { ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.2.6';
+import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.2.8';
 import { G, POOL, SETTINGS, tierOf, initGame, renderAll, showWinner,
-         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.2.6';
+         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.2.8';
 
 // ─── QUICK MATCH ─────────────────────────────────────────────────────────────
 export async function showQuickMatch() {
@@ -103,6 +103,7 @@ export async function showQuickMatch() {
       p1:      { uid: myUid,  name: myName  },
       p2:      { uid: oppUid, name: oppName },
       state,
+      winPts:       SETTINGS.winPts,
       status:       'playing',
       createdAt:    Date.now(),
       turnDeadline: Date.now() + TURN_TIMEOUT_MS,
@@ -312,7 +313,13 @@ export async function startOnlineGame(gameId, myIndex, opponentName) {
     await new Promise(r => setTimeout(r, 500)); // wait 500ms and retry
   }
   if (initSnap && initSnap.exists()) {
-    const normalized = normalizeState(initSnap.val());
+    const gameData = initSnap.val();
+    // Applica winPts della partita (impostato da P1 al momento della creazione)
+    const gameNode = await get(ref(db, 'games/' + gameId));
+    if (gameNode.exists() && gameNode.val().winPts) {
+      SETTINGS.winPts = gameNode.val().winPts;
+    }
+    const normalized = normalizeState(gameData);
     Object.assign(G, normalized);
     G.selected = -1;
     renderAll();

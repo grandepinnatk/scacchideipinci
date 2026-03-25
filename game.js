@@ -1,7 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.6';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.8';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -176,21 +176,17 @@ export function initGame() {
 // Chiamata da auth.js dopo il login
 export function applyAdminConfig(config) {
   if (!config) return;
-  if (config.winPts) SETTINGS.winPts = config.winPts;
-  if (config.weights) {
-    // Aggiorna i pesi di rarità
-    Object.assign(SETTINGS.weights, config.weights);
-  }
+  if (config.winPts)  SETTINGS.winPts = config.winPts;
+  if (config.weights) Object.assign(SETTINGS.weights, config.weights);
   if (config.pieces && Array.isArray(config.pieces)) {
-    // Aggiorna ALL_PIECES con i valori admin
+    // Usa PIECE_OVERRIDES (il meccanismo già esistente) invece di mutare ALL_PIECES
+    // così i valori admin prevalgono sui default senza alterare l'array sorgente
     config.pieces.forEach(p => {
-      const found = ALL_PIECES.find(ap => ap.name === p.name);
-      if (found) { found.z = p.z; found.val = p.val; }
+      if (p && p.name) PIECE_OVERRIDES[p.name] = { z: [...p.z], val: p.val };
     });
   }
-  // Rigenera sempre il POOL (riflette sia i nuovi valori carte che i nuovi pesi)
-  POOL.length = 0;
-  POOL.push(...buildPool());
+  // Rigenera il POOL con pesi e valori aggiornati
+  POOL = buildPool();
 }
 
 // ─── LOGICA DI GIOCO ─────────────────────────────────────────────────────────

@@ -9,6 +9,20 @@
 
 ---
 
+## [1.2.8] — 2026-03-25
+
+### Correzioni
+- **Carte e pesi admin non applicati** — `applyAdminConfig` mutava direttamente `ALL_PIECES` ma `buildPool` usa `getEffectivePiece()` che legge prima `PIECE_OVERRIDES` (il meccanismo override già esistente per le impostazioni locali). Le modifiche admin venivano quindi ignorate. Corretto: `applyAdminConfig` ora popola `PIECE_OVERRIDES` con i valori da Firebase e riassegna `POOL = buildPool()`, garantendo che carte e pesi configurati dall'admin vengano correttamente applicati al basket di gioco
+
+---
+
+## [1.2.7] — 2026-03-25
+
+### Correzioni
+- **Punteggio vittoria in multiplayer** — il `winPts` configurato nella console admin non veniva applicato alle partite online. Corretto: P1 salva `winPts` nel nodo della partita su Firebase al momento della creazione; entrambi i giocatori lo leggono in `startOnlineGame` e lo applicano a `SETTINGS.winPts`, garantendo che la partita usi sempre il punteggio configurato dall'admin indipendentemente dalla cache locale dei giocatori
+
+---
+
 ## [1.2.6] — 2026-03-25
 
 ### Nuove funzionalità
@@ -31,6 +45,20 @@
 
 ### Modifiche regole
 - **Punteggio vittoria** — portato da 30 a 50 punti
+
+---
+
+## [1.2.8] — 2026-03-25
+
+### Correzioni
+- **Carte e pesi admin non applicati** — `applyAdminConfig` mutava direttamente `ALL_PIECES` ma `buildPool` usa `getEffectivePiece()` che legge prima `PIECE_OVERRIDES` (il meccanismo override già esistente per le impostazioni locali). Le modifiche admin venivano quindi ignorate. Corretto: `applyAdminConfig` ora popola `PIECE_OVERRIDES` con i valori da Firebase e riassegna `POOL = buildPool()`, garantendo che carte e pesi configurati dall'admin vengano correttamente applicati al basket di gioco
+
+---
+
+## [1.2.7] — 2026-03-25
+
+### Correzioni
+- **Punteggio vittoria in multiplayer** — il `winPts` configurato nella console admin non veniva applicato alle partite online. Corretto: P1 salva `winPts` nel nodo della partita su Firebase al momento della creazione; entrambi i giocatori lo leggono in `startOnlineGame` e lo applicano a `SETTINGS.winPts`, garantendo che la partita usi sempre il punteggio configurato dall'admin indipendentemente dalla cache locale dei giocatori
 
 ---
 
