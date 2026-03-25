@@ -1,7 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.1';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.3';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -514,23 +514,24 @@ export function renderBasket() {
       </div>
       <div style="margin-top:4px"><span class="rb ${tierCls}">${tierLbl}</span></div>`;
     // Gestione click: singolo → seleziona, doppio → seleziona + gioca
-    // Usiamo un timer per distinguere i due casi ed evitare il toggle
-    // che avverrebbe con due onclick separati prima del dblclick
+    // Il doppio click usa window.doInsert (intercettato da matchmaking.js in multiplayer)
+    // invece della doInsert locale, così Firebase viene aggiornato correttamente
+    const playCard = () => {
+      const fn = (typeof window.doInsert === 'function') ? window.doInsert : doInsert;
+      fn();
+    };
     let clickTimer = null;
     d.addEventListener('click', (e) => {
       if (clickTimer) {
-        // Secondo click: è un doppio click
         clearTimeout(clickTimer);
         clickTimer = null;
-        // Forza la selezione (senza toggle) e gioca
         G.selected = i;
         renderBasket();
         renderPhaseSlots();
         d.classList.add('playing');
         d.addEventListener('animationend', () => d.classList.remove('playing'), { once: true });
-        setTimeout(() => { if (G.selected === i) doInsert(); }, 200);
+        setTimeout(() => { if (G.selected === i) playCard(); }, 200);
       } else {
-        // Primo click: aspetta per vedere se arriva il secondo
         clickTimer = setTimeout(() => {
           clickTimer = null;
           selectCard(i);
@@ -555,7 +556,10 @@ export function renderBasket() {
         d.classList.add('playing');
         d.addEventListener('animationend', () => d.classList.remove('playing'), { once: true });
         setTimeout(() => {
-          if (G.selected === i) doInsert();
+          if (G.selected === i) {
+            const fn = (typeof window.doInsert === 'function') ? window.doInsert : doInsert;
+            fn();
+          }
         }, 50);
       }
     }, { passive: true });

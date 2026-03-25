@@ -9,6 +9,27 @@
 
 ---
 
+## [1.2.3] — 2026-03-25
+
+### Correzioni
+- **Matchmaking cross-provider** — risolto deadlock tra utenti Google e utenti email/password. Il meccanismo "claim" usato per gestire la race condition creava un nodo con chiave `A_B` uguale per entrambi i giocatori: entrambi scrivevano il claim, entrambi trovavano `creator !== myUid` nel double-check, e nessuno creava la partita. Sostituito con logica più semplice: chi fa poll rimuove prima se stesso dalla coda, poi verifica che l'avversario sia ancora presente prima di procedere — se non lo è, si reiscrive e aspetta come P2
+
+---
+
+## [1.2.2] — 2026-03-25
+
+### Correzioni
+- **Multiplayer — turno non passava** — risolto bug critico: il nuovo click handler con timer chiamava `doInsert()` dalla versione locale di `game.js` invece di quella intercettata di `matchmaking.js` (che salva lo stato su Firebase). Corretto impostando `window.doInsert` alla versione multiplayer all'avvio di ogni partita online e ripristinandola alla versione locale al cleanup
+
+---
+
+## [1.2.1] — 2026-03-20
+
+### Correzioni
+- **Doppio click (PC)** — risolto bug per cui il doppio click non giocava la carta. Il problema era il doppio toggle causato da due eventi `onclick` separati prima di `ondblclick`. Sostituito con un unico listener con timer a 220ms
+
+---
+
 ## [1.2.0] — 2026-03-20
 
 ### Nuove funzionalità

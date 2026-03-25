@@ -1,11 +1,11 @@
 // ─── matchmaking.js — quick match, invite, partita online, timer, forfeit ────
 
-import { db, auth }          from './firebase.js?v=1.1.8';
+import { db, auth }          from './firebase.js?v=1.2.3';
 import { ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.1.8';
+import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.2.3';
 import { G, POOL, SETTINGS, tierOf, initGame, renderAll, showWinner,
-         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.1.8';
+         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.2.3';
 
 // ─── QUICK MATCH ─────────────────────────────────────────────────────────────
 export async function showQuickMatch() {
@@ -79,34 +79,21 @@ export async function showQuickMatch() {
       return;
     }
 
-    // ── Uso una scrittura condizionale per evitare la race condition ─────────
-    // Scrivo un nodo "claim/{myUid}_{oppUid}" — solo chi scrive per primo vince
-    // Se il nodo esiste già, l'altro giocatore ha già creato la partita → aspetto
-    const claimKey = [myUid, oppUid].sort().join('_');
-    const claimRef = ref(db, 'matchmaking/claims/' + claimKey);
-
-    // Provo a scrivere il claim solo se non esiste
-    const existingClaim = await get(claimRef);
-    if (existingClaim.exists()) {
-      // Qualcuno ha già creato la partita — aspetto la notifica come P2
-      MP.pollTimer = setTimeout(poll, 1000);
-      return;
-    }
-
-    // Scrivo il claim
-    await set(claimRef, { creator: myUid, t: Date.now() });
-
-    // Verifico di essere ancora io quello che ha scritto (double-check)
-    const claimCheck = await get(claimRef);
-    if (!claimCheck.exists() || claimCheck.val().creator !== myUid) {
-      // Qualcun altro ha vinto la race — aspetto come P2
-      MP.pollTimer = setTimeout(poll, 1000);
-      return;
-    }
-
-    // ── Sono P1 — creo la partita ────────────────────────────────────────────
+    // ── Provo a diventare P1: rimuovo me stesso dalla coda prima di tutto ──
+    // Se nel frattempo l'avversario mi ha già rimosso (race), riprendo come P2
     MP.isInQueue = false;
     if (MP.queueRef) { await remove(MP.queueRef); MP.queueRef = null; }
+
+    // Verifico che l'avversario sia ancora in coda prima di procedere
+    const oppStillInQueue = await get(ref(db, 'matchmaking/queue/' + oppUid));
+    if (!oppStillInQueue.exists()) {
+      // L'avversario è già stato preso da qualcun altro — aspetto come P2
+      MP.isInQueue = true;
+      MP.queueRef = ref(db, 'matchmaking/queue/' + myUid);
+      await set(MP.queueRef, { uid: myUid, name: myName, t: Date.now() });
+      MP.pollTimer = setTimeout(poll, 1000);
+      return;
+    }
     await remove(ref(db, 'matchmaking/queue/' + oppUid));
 
     const gameId = push(ref(db, 'games')).key;
@@ -124,9 +111,6 @@ export async function showQuickMatch() {
 
     // Notifico P2
     await set(ref(db, 'matchmaking/match/' + oppUid), { gameId, hostName: myName });
-
-    // Pulisco il claim dopo 30s
-    setTimeout(() => remove(claimRef), 30000);
 
     // Avvio come P1
     await startOnlineGame(gameId, 0, oppName);
@@ -280,6 +264,9 @@ export function normalizeState(state) {
 export async function startOnlineGame(gameId, myIndex, opponentName) {
   // Reset G a stato pulito prima di ogni partita
   initGame();
+
+  // Sostituisci window.doInsert con la versione intercettata per il multiplayer
+  window.doInsert = doInsert;
 
   MP.isOnline      = true;
   MP.gameId        = gameId;
@@ -484,6 +471,9 @@ export async function cleanupMP(returnToLobby = true) {
   if (getCurrentUser())  await remove(ref(db,'activeGame/'+getCurrentUser().uid));
   MP.isOnline = false;
   MP.gameId   = null;
+  // Ripristina window.doInsert alla versione locale (non multiplayer)
+  if (window._origDoInsert) window.doInsert = window._origDoInsert;
+
   const btnReset = document.getElementById('btn-reset');
   if (btnReset) { btnReset.textContent='Nuova partita'; btnReset.style.color=''; btnReset.style.borderColor=''; }
   document.getElementById('mp-bar').classList.remove('show');
