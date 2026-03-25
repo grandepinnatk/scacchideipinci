@@ -2,6 +2,13 @@
 
 ---
 
+## [1.2.1] — 2026-03-20
+
+### Correzioni
+- **Doppio click (PC)** — risolto bug per cui il doppio click non giocava la carta. Il problema era che `onclick` veniva chiamato due volte prima che `ondblclick` scattasse, causando un doppio toggle della selezione che resettava `G.selected` a `-1`. Sostituito con un unico listener con timer a 220ms: il primo click attende, il secondo annulla il timer e gioca direttamente
+
+---
+
 ## [1.2.0] — 2026-03-20
 
 ### Nuove funzionalità

@@ -1,7 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.0';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.2.1';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -513,17 +513,30 @@ export function renderBasket() {
         <span class="bcv" title="Villaggio">V:&nbsp;&nbsp;${p.z[2]}</span>
       </div>
       <div style="margin-top:4px"><span class="rb ${tierCls}">${tierLbl}</span></div>`;
-    // Click singolo → seleziona
-    d.onclick = () => selectCard(i);
-
-    // Doppio click (PC) → seleziona + gioca
-    d.ondblclick = (e) => {
-      e.preventDefault();
-      selectCard(i);
-      d.classList.add('playing');
-      d.addEventListener('animationend', () => d.classList.remove('playing'), { once: true });
-      setTimeout(() => { if (G.selected === i) doInsert(); }, 200);
-    };
+    // Gestione click: singolo → seleziona, doppio → seleziona + gioca
+    // Usiamo un timer per distinguere i due casi ed evitare il toggle
+    // che avverrebbe con due onclick separati prima del dblclick
+    let clickTimer = null;
+    d.addEventListener('click', (e) => {
+      if (clickTimer) {
+        // Secondo click: è un doppio click
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        // Forza la selezione (senza toggle) e gioca
+        G.selected = i;
+        renderBasket();
+        renderPhaseSlots();
+        d.classList.add('playing');
+        d.addEventListener('animationend', () => d.classList.remove('playing'), { once: true });
+        setTimeout(() => { if (G.selected === i) doInsert(); }, 200);
+      } else {
+        // Primo click: aspetta per vedere se arriva il secondo
+        clickTimer = setTimeout(() => {
+          clickTimer = null;
+          selectCard(i);
+        }, 220);
+      }
+    });
 
     // Swipe verso l'alto (mobile/tablet) → seleziona + gioca
     let touchStartY = 0;
