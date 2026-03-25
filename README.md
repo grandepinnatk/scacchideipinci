@@ -1,4 +1,4 @@
-# Scacchi dei Pinci — v1.2.0
+# Scacchi dei Pinci — v1.3.2
 
 Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
@@ -10,9 +10,9 @@ Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
 Il campo è una linea di 5 caselle divise in 3 zone: **Castello** (1-2), **Sala del Re** (3) e **Villaggio** (4-5).
 
-I due giocatori inseriscono i pezzi da lati opposti, uno alla volta. Ogni nuovo pezzo spinge quelli esistenti verso l'avversario. Quando due pezzi si trovano nella stessa casella, si confrontano i valori per quella zona — chi ha il valore più alto guadagna punti. Il primo a **30 punti** vince.
+I due giocatori inseriscono i pezzi da lati opposti, uno alla volta. Ogni nuovo pezzo spinge quelli esistenti verso l'avversario. Quando due pezzi si trovano nella stessa casella, si confrontano i valori per quella zona. Il primo a **50 punti** vince.
 
-**Turno 1 speciale:** il Giocatore 1 inserisce 1 sola carta; il Giocatore 2 ne inserisce 2. Dal secondo turno in poi entrambi inseriscono 2 carte a testa.
+**Turno 1:** il Giocatore 1 inserisce 1 carta, il Giocatore 2 ne inserisce 2. Dal turno 2 in poi entrambi inseriscono 2 carte a testa.
 
 **Sala del Re:** vincere il confronto nella casella 3 vale **2 punti** invece di 1.
 
@@ -39,6 +39,15 @@ Ogni mossa ha un timer di **45 secondi**. Allo scadere viene giocata automaticam
 
 ---
 
+## Lobby
+
+La lobby mostra:
+- **Statistiche personali** — Partite giocate, Vittorie, ELO e Posizione in classifica globale
+- **Pulsanti di gioco** — Partita rapida, Invita amico, Gioca in locale
+- **Classifica globale** — Top 15 giocatori per ELO. Se non sei nei top 15, la tua riga appare separata in fondo
+
+---
+
 ## Schema a blocchi del flusso di gioco
 
 ```
@@ -54,6 +63,7 @@ Ogni mossa ha un timer di **45 secondi**. Allo scadere viene giocata automaticam
 ┌────────────▼────────────┐
 │          Lobby          │
 │  statistiche · ELO      │
+│  posizione · classifica │
 └────────────┬────────────┘
              │
      ┌───────▼────────┐
@@ -80,11 +90,12 @@ Ogni mossa ha un timer di **45 secondi**. Allo scadere viene giocata automaticam
               │                                          │
 ┌─────────────▼───────────────┐  ┌──────────────────┐   │
 │  Seleziona carta dal basket │  │    Timer 45s     │   │
-└─────────────┬───────────────┘  │ auto: carta peg. │   │
-              │         ·······► └──────────────────┘   │
+│  (swipe / doppio click / btn)│  │ auto: carta peg. │   │
+└─────────────┬───────────────┘  └──────────────────┘   │
+              │                                          │
 ┌─────────────▼───────────────┐                          │
 │   Gioca Carta → pipe        │                          │
-│  (swipe / doppio click / btn)│                         │
+│   (animazione scorrimento)  │                          │
 └─────────────┬───────────────┘                          │
               │                                          │
 ┌─────────────▼───────────────┐                          │
@@ -94,7 +105,7 @@ Ogni mossa ha un timer di **45 secondi**. Allo scadere viene giocata automaticam
 └─────────────┬───────────────┘                          │
               │                                          │
 ┌─────────────▼───────────────┐                          │
-│      Punteggio ≥ 30?        │──── No ─────────────────►┘
+│      Punteggio ≥ 50?        │──── No ─────────────────►┘
 └─────────────┬───────────────┘
               │ Sì
 ┌─────────────▼─────────────┐
@@ -107,20 +118,18 @@ Ogni mossa ha un timer di **45 secondi**. Allo scadere viene giocata automaticam
 └───────────────────────────┘
 ```
 
-> Il diagramma completo in PDF è disponibile nel file `scacchi_dei_pinci_flusso_v1.0.0.pdf`.
-
 ---
 
 ## I 40 Pezzi
 
-Ogni pezzo ha valori specifici per le tre zone e un'illustrazione ispirata ai racconti di Borges, in stile pittura fiamminga.
+Ogni pezzo ha valori per le tre zone e un'illustrazione in stile pittura fiamminga.
 
-| Rarità | Colore |
-|--------|--------|
-| 🟡 Leggendario | Oro |
-| 🟣 Epico | Viola |
-| 🔵 Raro | Blu |
-| ⚫ Comune | Grigio |
+| Rarità | Colore | Forza |
+|--------|--------|-------|
+| 🟡 Leggendario | Oro | val ≥ 20 |
+| 🟣 Epico | Viola | val 15–19 |
+| 🔵 Raro | Blu | val 10–14 |
+| ⚫ Comune | Grigio | val < 10 |
 
 ---
 
@@ -128,23 +137,34 @@ Ogni pezzo ha valori specifici per le tre zone e un'illustrazione ispirata ai ra
 
 ```
 index.html        — HTML + @font-face embedded
-style.css         — tutti gli stili del gioco
-firebase.js       — inizializzazione Firebase SDK
-shared.js         — stato condiviso (MP, getCurrentUser, showScreen)
-game.js           — logica di gioco, render, animazioni, settings
-matchmaking.js    — quick match, invite, sync online, timer, forfeit
-auth.js           — autenticazione, lobby, ELO, bootstrap
+admin.html        — Console di amministrazione
+style.css         — Tutti gli stili del gioco
+firebase.js       — Inizializzazione Firebase SDK
+shared.js         — Stato condiviso (MP, getCurrentUser, showScreen)
+game.js           — Logica di gioco, render, animazioni, settings
+matchmaking.js    — Quick match, invite, sync online, timer, forfeit
+auth.js           — Autenticazione, lobby, ELO, classifica, bootstrap
 img/              — 40 illustrazioni PNG dei pezzi
-CHANGELOG.md      — storia delle versioni
+CHANGELOG.md      — Storia delle versioni
 ```
+
+---
+
+## Console Admin
+
+Accessibile su `/admin.html`. Richiede login con un'email autorizzata.
+
+- **Carte** — modifica C/R/V e forza di ogni carta
+- **Impostazioni** — punteggio vittoria e pesi per rarità
+- **Amministratori** — gestione lista email admin
+
+Super admin fisso: `grandepinna.tk@gmail.com`
 
 ---
 
 ## Firebase Setup
 
-Il gioco usa Firebase Realtime Database e Authentication. La configurazione è in `firebase.js`.
-
-**Regole database:**
+**Regole Realtime Database:**
 ```json
 {
   "rules": {
@@ -161,7 +181,8 @@ Il gioco usa Firebase Realtime Database e Authentication. La configurazione è i
         ".write": "auth != null && auth.uid == $uid"
       }
     },
-    "invites": { ".read": "auth != null", ".write": "auth != null" }
+    "invites": { ".read": "auth != null", ".write": "auth != null" },
+    "admin": { ".read": "auth != null", ".write": "auth != null" }
   }
 }
 ```
@@ -170,4 +191,4 @@ Il gioco usa Firebase Realtime Database e Authentication. La configurazione è i
 
 ## Ispirazione
 
-Ogni pezzo è associato a un racconto di **Jorge Luis Borges** — dall'Aleph alla Biblioteca di Babele. Le illustrazioni seguono l'estetica della pittura fiamminga del XV-XVI secolo.
+Ogni pezzo è associato a un racconto di **Jorge Luis Borges**. Le illustrazioni seguono l'estetica della pittura fiamminga del XV–XVI secolo (Bruegel, Bosch, van Eyck).
