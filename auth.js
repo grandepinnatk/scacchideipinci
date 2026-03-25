@@ -1,6 +1,6 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.3.2';
+import { auth, db }           from './firebase.js?v=1.3.3';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
@@ -8,12 +8,12 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, remove, onValue, off, query }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.3.2';
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.3.2';
+import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.3.3';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.3.3';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1.3.2';
+         startOnlineGame } from './matchmaking.js?v=1.3.3';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
@@ -215,9 +215,9 @@ export async function loadLeaderboard() {
       if (rankEl) rankEl.textContent = myRank >= 0 ? `#${myRank + 1}` : '—';
     }
 
-    const top15 = users.slice(0, 15);
+    const top10 = users.slice(0, 10);
     tbody.innerHTML = '';
-    top15.forEach((u,i) => {
+    top10.forEach((u,i) => {
       const tr = document.createElement('tr');
       if (me && u.uid === me.uid) tr.className = 'lb-me';
       tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
@@ -227,7 +227,7 @@ export async function loadLeaderboard() {
     // Se l'utente non è in top 15, aggiungi la sua riga in fondo separata
     if (me) {
       const myIdx = users.findIndex(u => u.uid === me.uid);
-      if (myIdx >= 15) {
+      if (myIdx >= 10) {
         const u = users[myIdx];
         const sep = document.createElement('tr');
         sep.innerHTML = '<td colspan="5" style="padding:4px 8px;color:#5a534e;font-size:11px">···</td>';
