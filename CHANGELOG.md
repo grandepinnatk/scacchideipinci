@@ -2,6 +2,15 @@
 
 ---
 
+## [1.3.6] — 2026-03-27
+
+### Modifiche UI
+- **Leaderboard — restyling completo** — `leaderboard.html` ridisegnata con lo stesso sistema visivo della lobby: font `BurbankBig` embedded, palette CSS identica (`--bg`, `--gold #e8a020`, `--p1`, `--p2`), layout `.lobby-box` con `border-radius-lg` e bordo `--border2`. Header con `.lobby-header` / `.lobby-title`, pulsante "← Lobby" nello stesso stile dei controlli di navigazione esistenti, sezioni con `.lobby-section` uppercase
+- **Leaderboard — podio top 3** — nuova sezione "PODIO" sopra la tabella, resa con le `.stat-card` a griglia 3 colonne della lobby; la card del primo posto è evidenziata con `--goldbg` e bordo `--gold`
+- **Leaderboard — taglio intelligente** — mostra i primi 10 giocatori; se l'utente è oltre la top 10, la sua riga appare dopo un separatore `· · ·` con i 3 giocatori adiacenti in classifica
+
+---
+
 ## [1.3.5] — 2026-03-26
 
 ### Nuove funzionalità
