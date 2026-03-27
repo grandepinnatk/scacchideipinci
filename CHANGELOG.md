@@ -2,6 +2,13 @@
 
 ---
 
+## [1.3.7] — 2026-03-27
+
+### Modifiche UI
+- **Leaderboard — paginazione completa** — la tabella mostra ora tutti i giocatori registrati con navigazione a pagine. Menu a tendina nella barra "CLASSIFICA COMPLETA" per scegliere tra 10, 20 o 50 righe per pagina. La barra di navigazione mostra sempre la prima e l'ultima pagina, una finestra di 3 pagine intorno a quella corrente, e ellissi (`…`) per i salti. Indicatore testuale "X–Y di N" per orientamento immediato. Al caricamento, se l'utente è loggato, la vista si apre direttamente sulla pagina che contiene la propria riga. Le medaglie 🥇🥈🥉 per i top 3 sono mantenute indipendentemente dalla pagina visualizzata
+
+---
+
 ## [1.3.6] — 2026-03-27
 
 ### Modifiche UI

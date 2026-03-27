@@ -1,4 +1,4 @@
-# Scacchi dei Pinci — v1.3.6
+# Scacchi dei Pinci — v1.3.7
 
 Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
@@ -52,8 +52,9 @@ Timer **45 secondi** per mossa. Se un giocatore abbandona per più di 2 minuti, 
 La pagina `leaderboard.html` mostra la classifica completa di tutti i giocatori registrati. Il design riprende integralmente quello della lobby: stessi font, stessa palette colori, stesso layout `.lobby-box`. La pagina include:
 
 - **Podio** — le prime tre posizioni evidenziate come stat-card con medaglie 🥇🥈🥉
-- **Classifica completa** — tutti i giocatori ordinati per ELO; se sei oltre la top 10 la tua riga appare separata dal separatore `· · ·`
-- **Evidenziazione** — la propria riga è sempre marcata in oro
+- **Classifica paginata** — tutti i giocatori ordinati per ELO con navigazione a pagine; menu a tendina per scegliere 10, 20 o 50 righe per pagina; indicatore "X–Y di N" e pulsanti con ellissi intelligente
+- **Apertura contestuale** — se l'utente è loggato, la vista si apre direttamente sulla pagina che contiene la propria riga
+- **Evidenziazione** — la propria riga è sempre marcata in oro; le medaglie per i top 3 sono mantenute indipendentemente dalla pagina
 
 ---
 

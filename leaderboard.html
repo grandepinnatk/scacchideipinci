@@ -241,6 +241,64 @@ body {
   font-family: 'BurbankBig', sans-serif;
 }
 
+/* PAGINATION CONTROLS */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pagination-info {
+  font-size: 12px;
+  color: var(--text3);
+  font-family: 'BurbankBig', monospace;
+  letter-spacing: 0.04em;
+}
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-btn {
+  padding: 6px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-size: 13px;
+  font-family: 'BurbankBig', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: 0.03em;
+}
+.page-btn:hover:not(:disabled) { background: var(--bg2); color: var(--text); }
+.page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.page-btn.active { background: var(--goldbg); border-color: var(--gold); color: var(--gold); }
+.page-dots {
+  font-size: 13px;
+  color: var(--text3);
+  padding: 0 2px;
+  font-family: 'BurbankBig', monospace;
+}
+
+/* PAGE SIZE SELECTOR */
+.pagesize-select {
+  appearance: none;
+  padding: 6px 28px 6px 10px;
+  background: var(--bg3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a4845'/%3E%3C/svg%3E") no-repeat right 9px center;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-size: 13px;
+  font-family: 'BurbankBig', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  letter-spacing: 0.03em;
+}
+.pagesize-select:focus { outline: none; border-color: var(--gold); }
+
 @media (min-width: 600px) {
   .lb-table td { font-size: 18px; padding: 10px 10px; }
   .lb-table th { font-size: 12px; padding: 6px 10px; }
@@ -271,7 +329,12 @@ body {
 
     <!-- CLASSIFICA COMPLETA -->
     <div class="lobby-section">
-      CLASSIFICA COMPLETA
+      <span>CLASSIFICA COMPLETA</span>
+      <select class="pagesize-select" id="page-size" title="Giocatori per pagina">
+        <option value="10">10 per pagina</option>
+        <option value="20">20 per pagina</option>
+        <option value="50">50 per pagina</option>
+      </select>
     </div>
 
     <table class="lb-table">
@@ -288,6 +351,12 @@ body {
         <tr><td colspan="5"><div class="spinner"></div></td></tr>
       </tbody>
     </table>
+
+    <!-- PAGINATION -->
+    <div class="pagination-bar" id="pagination-bar" style="display:none">
+      <span class="pagination-info" id="pagination-info"></span>
+      <div class="pagination-controls" id="pagination-controls"></div>
+    </div>
 
   </div>
 </div>
@@ -311,9 +380,16 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getDatabase(app);
 
-const MEDALS = ['🥇','🥈','🥉'];
+const MEDALS = ['\u{1F947}','\u{1F948}','\u{1F949}'];
 
-function renderPodio(top3, myUid) {
+// ── State ─────────────────────────────────────────────────────────────────
+let allUsers    = [];   // full sorted list, loaded once
+let myUid       = null;
+let currentPage = 1;
+let pageSize    = 10;
+
+// ── Podio top 3 ───────────────────────────────────────────────────────────
+function renderPodio(top3) {
   const el = document.getElementById('podio');
   if (!top3.length) { el.innerHTML = ''; return; }
   el.innerHTML = top3.map((u, i) => {
@@ -321,12 +397,107 @@ function renderPodio(top3, myUid) {
     return `<div class="stat-card ${i === 0 ? 'gold-card' : ''}">
       <div class="stat-medal">${MEDALS[i]}</div>
       <div class="stat-val ${i === 0 ? 'gold' : ''}">${u.elo || 1000}</div>
-      <div class="stat-lbl">${u.displayName || '?'}${isMe ? ' (tu)' : ''}</div>
+      <div class="stat-lbl">${u.displayName || '?'}${isMe ? ' <span style="color:var(--gold)">(tu)</span>' : ''}</div>
     </div>`;
   }).join('');
 }
 
-async function loadLeaderboard(myUid) {
+// ── Pagina corrente della tabella ─────────────────────────────────────────
+function renderPage() {
+  const tbody      = document.getElementById('lb-body');
+  const infoEl     = document.getElementById('pagination-info');
+  const controlsEl = document.getElementById('pagination-controls');
+  const barEl      = document.getElementById('pagination-bar');
+
+  const total      = allUsers.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  // Clamp in caso pageSize sia cambiato
+  currentPage = Math.min(currentPage, totalPages);
+
+  const start = (currentPage - 1) * pageSize;  // indice 0-based
+  const end   = Math.min(start + pageSize, total);
+  const slice = allUsers.slice(start, end);
+
+  // ── Righe della tabella ────────────────────────────────────────────
+  tbody.innerHTML = '';
+  slice.forEach((u, localIdx) => {
+    const i    = start + localIdx;  // posizione assoluta (0-based)
+    const isMe = myUid && u.uid === myUid;
+    const tr   = document.createElement('tr');
+    if (isMe) tr.className = 'lb-me';
+
+    // Medaglie solo per i primi 3 assoluti, indipendentemente dalla pagina
+    const rankCell = i < 3
+      ? `<span>${MEDALS[i]}</span>`
+      : `<span>${i + 1}</span>`;
+
+    tr.innerHTML = `
+      <td class="lb-rank ${i < 3 ? 'top3' : ''}">${rankCell}</td>
+      <td class="lb-name">${u.displayName || '?'}${isMe ? ' <span style="font-size:11px;color:var(--gold);opacity:0.8">(tu)</span>' : ''}</td>
+      <td class="lb-elo">${u.elo || 1000}</td>
+      <td class="lb-wins">${u.wins || 0}</td>
+      <td class="lb-played">${u.played || 0}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // ── Info testuale: "11–20 di 87" ──────────────────────────────────
+  infoEl.textContent = `${start + 1}\u2013${end} di ${total}`;
+  barEl.style.display = totalPages > 1 ? 'flex' : 'none';
+
+  // ── Pulsanti di navigazione con ellissi ───────────────────────────
+  // Struttura: ← [1] … [cur-1] [cur] [cur+1] … [N] →
+  // Mostriamo sempre prima, ultima, e una finestra di 3 intorno alla corrente.
+  controlsEl.innerHTML = '';
+
+  function addBtn(label, page, isActive, isDisabled) {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (isActive ? ' active' : '');
+    btn.textContent = label;
+    btn.disabled = isDisabled;
+    if (!isDisabled && !isActive) {
+      btn.addEventListener('click', () => {
+        currentPage = page;
+        renderPage();
+        // Scroll morbido alla sezione classifica
+        document.getElementById('lb-body').closest('table').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+    controlsEl.appendChild(btn);
+  }
+
+  function addDots() {
+    const s = document.createElement('span');
+    s.className = 'page-dots';
+    s.textContent = '\u2026';
+    controlsEl.appendChild(s);
+  }
+
+  // Pulsante precedente
+  addBtn('\u2190', currentPage - 1, false, currentPage === 1);
+
+  // Costruiamo l\'insieme delle pagine da mostrare come bottoni numerati:
+  // sempre la prima, l\'ultima, e le 3 intorno alla corrente.
+  const visible = new Set([1, totalPages]);
+  for (let p = currentPage - 1; p <= currentPage + 1; p++) {
+    if (p >= 1 && p <= totalPages) visible.add(p);
+  }
+  const sorted = [...visible].sort((a, b) => a - b);
+
+  let prev = 0;
+  sorted.forEach(p => {
+    if (p - prev > 1) addDots();  // buco → puntini
+    addBtn(p, p, p === currentPage, false);
+    prev = p;
+  });
+
+  // Pulsante successivo
+  addBtn('\u2192', currentPage + 1, false, currentPage === totalPages);
+}
+
+// ── Caricamento dati da Firebase ──────────────────────────────────────────
+async function loadLeaderboard(uid) {
+  myUid = uid;
   const tbody  = document.getElementById('lb-body');
   const metaEl = document.getElementById('lb-meta');
 
@@ -339,54 +510,21 @@ async function loadLeaderboard(myUid) {
       return;
     }
 
-    const users = [];
+    allUsers = [];
     snap.forEach(c => {
       const v = c.val();
-      if (v && (v.displayName || v.elo)) users.push({ uid: c.key, ...v });
+      if (v && (v.displayName || v.elo)) allUsers.push({ uid: c.key, ...v });
     });
-    users.sort((a, b) => (b.elo || 1000) - (a.elo || 1000));
+    allUsers.sort((a, b) => (b.elo || 1000) - (a.elo || 1000));
 
-    const myRank = myUid ? users.findIndex(u => u.uid === myUid) : -1;
-    metaEl.textContent = `${users.length} giocatori registrati${myRank >= 0 ? ' · La tua posizione: #' + (myRank + 1) : ''}`;
+    const myRank = myUid ? allUsers.findIndex(u => u.uid === myUid) : -1;
+    metaEl.textContent = `${allUsers.length} giocatori registrati${myRank >= 0 ? ' \u00b7 La tua posizione: #' + (myRank + 1) : ''}`;
 
-    // Podio
-    renderPodio(users.slice(0, 3), myUid);
+    renderPodio(allUsers.slice(0, 3));
 
-    // Tabella completa
-    tbody.innerHTML = '';
-    const NEARBY = 3;
-    let sepAdded = false;
-
-    users.forEach((u, i) => {
-      const isMe = myUid && u.uid === myUid;
-      const show = i < 10 || (myRank >= 0 && Math.abs(i - myRank) <= NEARBY);
-
-      if (!show) {
-        if (!sepAdded && i === 10) {
-          const sep = document.createElement('tr');
-          sep.className = 'sep-row';
-          sep.innerHTML = '<td colspan="5">· · ·</td>';
-          tbody.appendChild(sep);
-          sepAdded = true;
-        }
-        if (!(myRank >= 0 && Math.abs(i - myRank) <= NEARBY)) return;
-      }
-
-      const tr = document.createElement('tr');
-      if (isMe) tr.className = 'lb-me';
-
-      const rankCell = i < 3
-        ? `<span>${MEDALS[i]}</span>`
-        : `<span>${i + 1}</span>`;
-
-      tr.innerHTML = `
-        <td class="lb-rank ${i < 3 ? 'top3' : ''}">${rankCell}</td>
-        <td class="lb-name">${u.displayName || '?'}${isMe ? ' <span style="font-size:11px;color:var(--gold);opacity:0.8">(tu)</span>' : ''}</td>
-        <td class="lb-elo">${u.elo || 1000}</td>
-        <td class="lb-wins">${u.wins || 0}</td>
-        <td class="lb-played">${u.played || 0}</td>`;
-      tbody.appendChild(tr);
-    });
+    // Apri direttamente sulla pagina che contiene la riga dell\'utente loggato
+    currentPage = myRank >= 0 ? Math.floor(myRank / pageSize) + 1 : 1;
+    renderPage();
 
   } catch(e) {
     document.getElementById('podio').innerHTML = '';
@@ -395,6 +533,15 @@ async function loadLeaderboard(myUid) {
   }
 }
 
+// ── Cambio dimensione pagina ──────────────────────────────────────────────
+document.getElementById('page-size').addEventListener('change', e => {
+  pageSize = parseInt(e.target.value, 10);
+  // Ricomincia dalla prima pagina ad ogni cambio
+  currentPage = 1;
+  if (allUsers.length) renderPage();
+});
+
+// ── Bootstrap auth ────────────────────────────────────────────────────────
 onAuthStateChanged(auth, user => {
   loadLeaderboard(user ? user.uid : null);
 });
