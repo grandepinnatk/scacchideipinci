@@ -12,24 +12,34 @@ import { G, SETTINGS, zoneOf, makePiece, selectCard, doInsert as _origDoInsert }
 
 // ─── Stato AI ─────────────────────────────────────────────────────────────────
 export const AI = {
-  active:     false,
-  difficulty: 'medium',
-  _timer:     null,
+  active:      false,
+  difficulty:  'medium',
+  humanIndex:  0,
+  _timer:      null,
+  _pendingSecond: undefined,
 };
 
 // ─── Entry point: avvia partita vs PC ────────────────────────────────────────
 export function playVsAI(difficulty) {
-  // Importazione lazy per evitare dipendenza circolare con matchmaking
-  const { MP, showScreen } = window._sharedModule;
-  const { initGame }       = window._gameModule;
+  const { MP } = window._sharedModule;
+  const { initGame } = window._gameModule;
 
   AI.active     = true;
   AI.difficulty = difficulty || 'medium';
   MP.isOnline   = false;
+  MP.opponentName = '';
+
+  // Sorteggio: 0 = umano gioca come G1 (primo), 1 = umano gioca come G2 (secondo)
+  AI.humanIndex = Math.random() < 0.5 ? 0 : 1;
 
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
   document.getElementById('app').style.display = '';
   initGame();
+
+  // Se l'umano è G2, la CPU è G1 e deve giocare subito il primo turno
+  if (AI.humanIndex === 1) {
+    scheduleMove();
+  }
 }
 
 export function cancelAI() {
@@ -40,12 +50,14 @@ export function cancelAI() {
 // ─── Schedulatore ─────────────────────────────────────────────────────────────
 // Chiamato da game.js dopo ogni renderAll quando è il turno del PC (G.turn === 1)
 export function scheduleMove(delay) {
-  if (!AI.active || G.over || G.turn !== 1) return;
+  const cpuIndex = AI.humanIndex === 0 ? 1 : 0;
+  if (!AI.active || G.over || G.turn !== cpuIndex) return;
   if (AI._timer) clearTimeout(AI._timer);
   const ms = delay !== undefined ? delay : _thinkDelay();
   AI._timer = setTimeout(() => {
     AI._timer = null;
-    if (!AI.active || G.over || G.turn !== 1) return;
+    const cpuIdx = AI.humanIndex === 0 ? 1 : 0;
+    if (!AI.active || G.over || G.turn !== cpuIdx) return;
     _makeMove();
   }, ms);
 }
@@ -123,8 +135,9 @@ function _moveHard() {
 
 // ─── Valutazione: score di ogni singola carta nel basket ──────────────────────
 function _scoreAllMoves() {
+  const cpuIdx = AI.humanIndex === 0 ? 1 : 0;
   return G.basket.map((piece, idx) => {
-    const score = _simulateInsert(G.pipe, G.pts, piece, 1);
+    const score = _simulateInsert(G.pipe, G.pts, piece, cpuIdx);
     return { idx, score };
   });
 }
@@ -138,7 +151,8 @@ function _bestPair() {
     // Stato dopo il primo inserimento
     const pipe1 = _clonePipe(G.pipe);
     const pts1  = [...G.pts];
-    _applyInsert(pipe1, pts1, G.basket[i], 1);
+    const cpuIdxPair = AI.humanIndex === 0 ? 1 : 0;
+    _applyInsert(pipe1, pts1, G.basket[i], cpuIdxPair);
 
     for (let j = 0; j < G.basket.length; j++) {
       if (j === i) continue; // non si può giocare la stessa carta due volte
@@ -146,9 +160,9 @@ function _bestPair() {
       // Stato dopo il secondo inserimento
       const pipe2 = _clonePipe(pipe1);
       const pts2  = [...pts1];
-      _applyInsert(pipe2, pts2, G.basket[j], 1);
+      _applyInsert(pipe2, pts2, G.basket[j], cpuIdxPair);
 
-      const score = _evalState(pipe2, pts2) + _positionalBonus(pipe2, 1);
+      const score = _evalState(pipe2, pts2) + _positionalBonus(pipe2, cpuIdxPair);
       if (score > bestScore) {
         bestScore = score;
         best = { first: i, second: j };
@@ -190,9 +204,10 @@ function _applyInsert(pipe, pts, piece, playerIdx) {
 }
 
 // ─── Funzione di valutazione: delta punti normalizzato ───────────────────────
-// Valore positivo = vantaggio per il PC (indice 1)
+// Valore positivo = vantaggio per il PC
 function _evalState(pipe, pts) {
-  return (pts[1] - pts[0]);
+  const cpuIdx = AI.humanIndex === 0 ? 1 : 0;
+  return cpuIdx === 1 ? (pts[1] - pts[0]) : (pts[0] - pts[1]);
 }
 
 // ─── Bonus posizionale: valuta dove si trovano le carte sul campo ─────────────
@@ -245,7 +260,8 @@ function _weightedRandom(weights) {
 
 // ─── Esegui la mossa: seleziona carta e chiama doInsert ──────────────────────
 function _playCard(idx) {
-  if (G.over || G.turn !== 1) return;
+  const cpuIndex = AI.humanIndex === 0 ? 1 : 0;
+  if (G.over || G.turn !== cpuIndex) return;
   selectCard(idx);
   // Usa window.doInsert per rispettare l'intercettazione di matchmaking.js
   const fn = typeof window.doInsert === 'function' ? window.doInsert : _origDoInsert;

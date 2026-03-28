@@ -4,40 +4,46 @@
 
 ## [1.4.0] — 2026-03-28
 
-Questa release consolida tutte le funzionalità introdotte nelle versioni 1.3.8 e 1.3.9 e segna il passaggio a una versione major minore per la presenza di un motore di gioco completamente nuovo.
+Questa release consolida le funzionalità introdotte nelle versioni 1.3.8 e 1.3.9, corregge tre bug nella modalità vs CPU e aggiunge il sorteggio del primo turno.
 
 ### Motore AI — Gioca vs CPU (`ai.js`)
 
-Nuovo modulo `ai.js` (zero dipendenze Firebase) che implementa tre livelli di difficoltà. Il giocatore umano è sempre G1; il CPU è sempre G2 e pianifica le proprie mosse automaticamente dopo un ritardo variabile (500–1300 ms) che simula il pensiero.
+Nuovo modulo `ai.js` (zero dipendenze Firebase) che implementa tre livelli di difficoltà. Il giocatore umano è sempre dalla parte sorteggiata; il CPU gioca automaticamente con un ritardo variabile (500–1300 ms) che simula il pensiero.
 
 - **🎲 Facile** — weighted random proporzionale al valore `val` di ogni carta nel basket. Non valuta il campo né simula combattimenti. Adatto per imparare le meccaniche.
-- **⚔ Medio** — greedy a 1 passo: simula ogni possibile inserimento (fino a 10 carte), sceglie il delta `pts[1]−pts[0]` più favorevole. 10% di probabilità di optare per la seconda scelta migliore per simulare l'imperfezione umana.
+- **⚔ Medio** — greedy a 1 passo: simula ogni possibile inserimento (fino a 10 carte), sceglie il delta `pts[cpu]−pts[umano]` più favorevole. 10% di probabilità di optare per la seconda scelta migliore per simulare l'imperfezione umana.
 - **💀 Difficile** — ottimizzazione sulla coppia: testa tutte le coppie ordinate di carte (fino a 90 combinazioni per il doppio inserimento del turno) e aggiunge un bonus posizionale che valuta la forza di ogni carta in campo nella propria zona corrente. Raramente sbaglia.
 
-Il pulsante "Gioca in locale" è stato rinominato in **"🤖 Gioca vs CPU"** e reindirizzato a una nuova schermata di selezione difficoltà (`screen-ai-difficulty`) con tre pulsanti descrittivi. Al termine della partita il giocatore torna automaticamente alla selezione difficoltà.
+Il pulsante "Gioca in locale" è stato rinominato in **"🤖 Gioca vs CPU"** e reindirizzato a una nuova schermata di selezione difficoltà (`screen-ai-difficulty`). Al termine della partita il giocatore torna automaticamente alla selezione difficoltà.
 
-**Integrazione tecnica:** `game.js` chiama `window._aiModule.scheduleMove()` dopo ogni `doInsert()` quando `G.turn === 1` e `AI.active`; `auth.js` carica `ai.js` con `import()` dinamico e lo registra su `window._aiModule` / `window.playVsAI`; `matchmaking.js`: `playLocal()` reindirizza a `showAIDifficultyScreen()`. L'accesso tramite `window._aiModule` evita dipendenze circolari tra moduli ES.
+### Sorteggio del primo turno
 
-**UX:** badge `CPU Facile / Medio / Difficile` nel turn banner durante il turno del CPU; overlay finale con "Hai vinto! 🏆" o "Il CPU ha vinto! 🤖" invece del generico "Giocatore 2 vince!".
+All'avvio di ogni partita vs CPU, `playVsAI` sorteggia con `Math.random()` chi gioca per primo. Il campo `AI.humanIndex` registra il risultato: `0` = umano è G1 (va per primo), `1` = umano è G2 (la CPU apre il gioco). Se la CPU ottiene G1, `scheduleMove()` viene chiamato immediatamente dopo `initGame()`. Tutte le funzioni del motore (`scheduleMove`, `_scoreAllMoves`, `_bestPair`, `_playCard`, `_evalState`) usano `cpuIndex = humanIndex === 0 ? 1 : 0` al posto del valore hardcoded `1`, inclusa la funzione di valutazione che inverte il segno del delta quando la CPU è G1.
+
+### Correzione nomi giocatori in modalità vs CPU
+
+`renderScore` aggiornava i label `.sc-label` nel DOM solo quando `MP.isOnline`. Dopo una partita online, i nomi dell'avversario rimanevano scritti nel DOM e venivano mostrati anche nella partita successiva vs CPU. Corretti anche `renderBanner` e l'overlay finale (`showWinner`).
+
+Tre rami ora distinti in `renderScore`:
+- `MP.isOnline` → nomi della partita online (comportamento invariato)
+- `AI.active` → nome utente loggato nel lato umano; `"CPU — Facile/Medio/Difficile"` nell'altro lato, coerente con il sorteggio
+- else → ripristina `"GIOCATORE 1"` / `"GIOCATORE 2"` per non lasciare mai residui
+
+`MP.opponentName` viene azzerato a ogni avvio di `playVsAI` per sicurezza. `showWinner` usa `AI.humanIndex` per determinare correttamente il vincitore indipendentemente da quale slot occupa l'umano.
 
 ### Partite vs CPU escluse dalle statistiche
 
-Le partite contro il motore AI **non modificano ELO, vittorie, sconfitte né partite giocate**. Solo le partite multiplayer online contano per la classifica. Aggiunto guard esplicito all'inizio di `updateEloStats` in `matchmaking.js`: se `window._aiModule.AI.active` è `true` la funzione ritorna immediatamente senza toccare Firebase.
+Le partite contro il motore AI non modificano ELO, vittorie, sconfitte né partite giocate. Guard esplicito in `updateEloStats`: se `window._aiModule.AI.active` è `true` la funzione ritorna immediatamente senza toccare Firebase.
 
 ### Stato giocatore in classifica
 
-Ogni riga della classifica — sia nella tabella in lobby che nella pagina `leaderboard.html` — mostra un **pallino colorato** come seconda colonna, subito dopo il numero di posizione:
+Ogni riga della classifica — lobby e `leaderboard.html` — mostra un pallino colorato come seconda colonna:
 
 - 🟢 **Verde** — online (`lastSeen` negli ultimi 5 minuti)
 - 🟠 **Arancio** — in gioco (`inGame: true` su Firebase)
 - ⚫ **Grigio scuro** — offline
 
-**Scritture su Firebase:** `matchmaking.js` scrive `inGame: true` su `/users/{uid}` all'avvio di ogni partita online (`startOnlineGame`) e `inGame: false` alla fine (`cleanupMP`). Il campo viene anche resettato a `false` in `ensureUserProfile` al login o ricaricamento pagina, per evitare stati bloccati in caso di crash.
-
-**Heartbeat presenza:** `auth.js` aggiorna `lastSeen` ogni 90 secondi tramite `setInterval` mentre il giocatore è in lobby, così il pallino verde rimane acceso per tutta la sessione e si spegne entro 5 minuti dalla chiusura della tab.
-
-**CSS:** `.lb-dot`, `.lb-dot-online`, `.lb-dot-ingame`, `.lb-dot-offline`, `.lb-dot-cell` aggiunti sia in `index.html` che in `leaderboard.html`. Colspan di tutte le tabelle classifica aggiornato da 5 a 6.
-
+`matchmaking.js` scrive `inGame: true` all'avvio di ogni partita online e `inGame: false` in `cleanupMP`. `auth.js` aggiorna `lastSeen` ogni 90 secondi tramite heartbeat. `leaderboard.html` è stato riscritto completamente per eliminare escape Unicode doppi che impedivano il rendering dei dati e un conflict marker Git che bloccava il parsing dello script.
 ---
 
 ## [1.3.7] — 2026-03-27

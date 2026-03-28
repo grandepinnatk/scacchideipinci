@@ -41,7 +41,7 @@ Timer **45 secondi** per mossa. Se un giocatore abbandona per più di 2 minuti, 
 
 ## Gioca vs CPU
 
-Il pulsante "🤖 Gioca vs CPU" sostituisce "Gioca in locale" e apre una schermata di selezione difficoltà. Il giocatore umano è sempre G1; il CPU è sempre G2 e gioca automaticamente con un ritardo che simula il pensiero.
+Il pulsante "🤖 Gioca vs CPU" apre una schermata di selezione difficoltà. Ad ogni partita viene **sorteggiato** chi gioca per primo: puoi trovarti come G1 o come G2, e il CPU si adatta di conseguenza.
 
 | Difficoltà | Strategia |
 |------------|-----------|

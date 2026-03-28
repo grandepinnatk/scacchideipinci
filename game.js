@@ -319,10 +319,13 @@ export function doInsert() {
   if (G.over) {
     setTimeout(showWinner, 600);
   } else {
-    // Se è attivo un AI e adesso tocca al PC (G2 = indice 1), pianifica la mossa
-    // Usiamo un accesso lazy a window._aiModule per evitare dipendenza circolare
-    if (window._aiModule && window._aiModule.AI.active && G.turn === 1) {
-      window._aiModule.scheduleMove();
+    // Se è attivo un AI e adesso tocca al PC, pianifica la mossa
+    // cpuIndex dipende dal sorteggio: 0 se CPU è G1, 1 se CPU è G2
+    if (window._aiModule && window._aiModule.AI.active) {
+      const cpuIndex = window._aiModule.AI.humanIndex === 0 ? 1 : 0;
+      if (G.turn === cpuIndex) {
+        window._aiModule.scheduleMove();
+      }
     }
   }
 }
@@ -349,7 +352,10 @@ export function showWinner() {
     const aiActive = window._aiModule && window._aiModule.AI.active;
     const p1Won = G.pts[0] >= SETTINGS.winPts;
     if (aiActive) {
-      if (p1Won) {
+      // humanIndex: 0 = umano è G1, 1 = umano è G2
+      const humanIndex = window._aiModule.AI.humanIndex;
+      const humanWon   = humanIndex === 0 ? p1Won : !p1Won;
+      if (humanWon) {
         if (icon) icon.textContent = '🏆';
         title.textContent = 'Hai vinto!';
         title.style.color = 'var(--gold)';
@@ -418,13 +424,30 @@ export function renderScore() {
   document.getElementById('tnum').textContent = G.turnNum;
   document.getElementById('sc1').classList.toggle('active', G.turn===0 && !G.over);
   document.getElementById('sc2').classList.toggle('active', G.turn===1 && !G.over);
-  // Aggiorna nomi giocatori se in modalità online
+  // Aggiorna nomi giocatori
+  const aiActive = window._aiModule && window._aiModule.AI.active;
   if (MP.isOnline && getCurrentUser()) {
     const myName = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
     const p1name = MP.myIndex === 0 ? myName : MP.opponentName;
     const p2name = MP.myIndex === 1 ? myName : MP.opponentName;
     document.getElementById('sc1').querySelector('.sc-label').textContent = p1name;
     document.getElementById('sc2').querySelector('.sc-label').textContent = p2name;
+  } else if (aiActive && getCurrentUser()) {
+    // Partita vs CPU: mostra nome utente loggato e "CPU (difficoltà)"
+    const myName  = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
+    const diff    = window._aiModule.AI.difficulty;
+    const diffLbl = { easy: 'Facile', medium: 'Medio', hard: 'Difficile' }[diff] || diff;
+    const aiName  = 'CPU — ' + diffLbl;
+    // Il giocatore umano è all'indice AI.humanIndex (0 o 1 a seconda del sorteggio)
+    const humanIdx = (window._aiModule.AI.humanIndex !== undefined) ? window._aiModule.AI.humanIndex : 0;
+    const p1name = humanIdx === 0 ? myName : aiName;
+    const p2name = humanIdx === 1 ? myName : aiName;
+    document.getElementById('sc1').querySelector('.sc-label').textContent = p1name;
+    document.getElementById('sc2').querySelector('.sc-label').textContent = p2name;
+  } else {
+    // Locale puro: ripristina nomi generici per non mostrare resti di partite precedenti
+    document.getElementById('sc1').querySelector('.sc-label').textContent = 'GIOCATORE 1';
+    document.getElementById('sc2').querySelector('.sc-label').textContent = 'GIOCATORE 2';
   }
 }
 
@@ -438,6 +461,11 @@ export function renderBanner() {
     const myName = getCurrentUser() ? (getCurrentUser().displayName || getCurrentUser().email.split('@')[0]) : 'Tu';
     p1label = MP.myIndex === 0 ? myName : MP.opponentName;
     p2label = MP.myIndex === 1 ? myName : MP.opponentName;
+  } else if (window._aiModule && window._aiModule.AI.active && getCurrentUser()) {
+    const myName   = getCurrentUser().displayName || getCurrentUser().email.split('@')[0];
+    const humanIdx = (window._aiModule.AI.humanIndex !== undefined) ? window._aiModule.AI.humanIndex : 0;
+    p1label = humanIdx === 0 ? myName : 'CPU';
+    p2label = humanIdx === 1 ? myName : 'CPU';
   } else {
     p1label = 'Giocatore 1';
     p2label = 'Giocatore 2';
