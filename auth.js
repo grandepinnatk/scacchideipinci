@@ -1,6 +1,6 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.3.5';
+import { auth, db }           from './firebase.js?v=1.4.0';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
@@ -8,12 +8,12 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, remove, onValue, off, query }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.3.5';
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.3.5';
+import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.4.0';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.4.0';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame } from './matchmaking.js?v=1.3.5';
+         startOnlineGame, showAIDifficultyScreen } from './matchmaking.js?v=1.4.0';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
@@ -96,15 +96,24 @@ export async function createUserProfile(uid, displayName) {
 export async function ensureUserProfile(user) {
   const snap = await get(ref(db,'users/'+user.uid));
   if (!snap.exists()) await createUserProfile(user.uid, user.displayName || user.email.split('@')[0]);
-  // Aggiorna lastSeen per il contatore utenti online
-  await update(ref(db,'users/'+user.uid), { lastSeen: Date.now() });
+  // Aggiorna lastSeen e resetta inGame (in caso di reload da partita) per il contatore utenti online
+  await update(ref(db,'users/'+user.uid), { lastSeen: Date.now(), inGame: false });
 }
 
 // ─── ONLINE STATS ─────────────────────────────────────────────────────────────
 let _onlineStatsUnsub = null;
 
+let _presenceHeartbeat = null;
+
 function startOnlineStats() {
   if (_onlineStatsUnsub) return; // already watching
+  // Heartbeat lastSeen ogni 90 secondi per mantenere lo stato online aggiornato
+  if (!_presenceHeartbeat) {
+    _presenceHeartbeat = setInterval(() => {
+      const u = getCurrentUser();
+      if (u) update(ref(db,'users/'+u.uid), { lastSeen: Date.now() });
+    }, 90000);
+  }
 
   // Conta utenti online: presence > now - 2min in /users
   // Conta partite in corso: games con status='playing'
@@ -148,6 +157,7 @@ function startOnlineStats() {
 
 function stopOnlineStats() {
   if (_onlineStatsUnsub) { _onlineStatsUnsub(); _onlineStatsUnsub = null; }
+  if (_presenceHeartbeat) { clearInterval(_presenceHeartbeat); _presenceHeartbeat = null; }
 }
 
 export async function loadLobby(user) {
@@ -216,25 +226,35 @@ export async function loadLeaderboard() {
     }
 
     const top10 = users.slice(0, 10);
+    const now = Date.now();
+    function presenceDot(u) {
+      if (u.inGame) return '<span class="lb-dot lb-dot-ingame" title="In gioco"></span>';
+      if (u.lastSeen && (now - u.lastSeen) < 5 * 60 * 1000) return '<span class="lb-dot lb-dot-online" title="Online"></span>';
+      return '<span class="lb-dot lb-dot-offline" title="Offline"></span>';
+    }
+    function makeRow(u, i, isMe) {
+      return `<td class="lb-rank">${i+1}</td><td class="lb-dot-cell">${presenceDot(u)}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
+    }
+
     tbody.innerHTML = '';
     top10.forEach((u,i) => {
       const tr = document.createElement('tr');
       if (me && u.uid === me.uid) tr.className = 'lb-me';
-      tr.innerHTML = `<td class="lb-rank">${i+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
+      tr.innerHTML = makeRow(u, i, me && u.uid === me.uid);
       tbody.appendChild(tr);
     });
 
-    // Se l'utente non è in top 15, aggiungi la sua riga in fondo separata
+    // Se l'utente non è in top 10, aggiungi la sua riga in fondo separata
     if (me) {
       const myIdx = users.findIndex(u => u.uid === me.uid);
       if (myIdx >= 10) {
         const u = users[myIdx];
         const sep = document.createElement('tr');
-        sep.innerHTML = '<td colspan="5" style="padding:4px 8px;color:#5a534e;font-size:11px">···</td>';
+        sep.innerHTML = '<td colspan="6" style="padding:4px 8px;color:#5a534e;font-size:11px">···</td>';
         tbody.appendChild(sep);
         const tr = document.createElement('tr');
         tr.className = 'lb-me';
-        tr.innerHTML = `<td class="lb-rank">${myIdx+1}</td><td>${u.displayName||'?'}</td><td>${u.elo||1000}</td><td>${u.wins||0}</td><td>${u.played||0}</td>`;
+        tr.innerHTML = makeRow(u, myIdx, true);
         tbody.appendChild(tr);
       }
     }
@@ -261,6 +281,8 @@ window.copyCode         = copyCode;
 window.joinByCode       = joinByCode;
 window.cancelInvite     = cancelInvite;
 window.playLocal        = playLocal;
+window.showScreen       = (id) => { const { showScreen } = window._sharedModule || {}; if (showScreen) showScreen(id); };
+window.showAIDifficultyScreen = showAIDifficultyScreen;
 window.doInsert         = doInsert;
 window.resetGame        = resetGame;
 window.switchTab        = switchTab;
@@ -304,13 +326,13 @@ authCallbacks.loadLeaderboard = loadLeaderboard;
 document.getElementById('app').style.display = 'none';
 initGame(); // populate G with valid structure before any render
 
-// Registra i callbacks per matchmaking.js
-authCallbacks.loadLobby       = loadLobby;
-authCallbacks.loadLeaderboard = loadLeaderboard;
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-document.getElementById('app').style.display = 'none';
-initGame();
+// ─── Esposizione moduli per ai.js (accesso lazy, senza dipendenza circolare) ──
+import('./shared.js?v=1.4.0').then(m => { window._sharedModule = m; });
+import('./game.js?v=1.4.0').then(m   => { window._gameModule   = m; });
+import('./ai.js?v=1.4.0').then(m     => {
+  window._aiModule = m;
+  window.playVsAI  = m.playVsAI;
+});
 
 // ─── GESTIONE REDIRECT OAUTH (ritorno da Google/Microsoft redirect) ─────────
 getRedirectResult(auth).then(async result => {

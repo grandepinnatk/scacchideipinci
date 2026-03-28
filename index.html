@@ -117,6 +117,53 @@
 .mp-bar-conn { display:flex; align-items:center; gap:6px; font-size:18px; color:var(--text3); }
 .mp-dot { width:8px; height:8px; border-radius:50%; background:#4caf50; }
 .mp-dot.off { background:#f44336; }
+
+/* AI DIFFICULTY SCREEN */
+.ai-diff-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'BurbankBig', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ai-diff-btn:hover { background: var(--bg2); border-color: var(--gold); }
+.ai-diff-icon { font-size: 28px; flex-shrink: 0; }
+.ai-diff-label { font-size: 18px; font-weight: bold; margin-bottom: 3px; color: var(--text); }
+.ai-diff-desc  { font-size: 12px; color: var(--text2); line-height: 1.4; }
+
+/* AI badge nel turn banner */
+#tbanner .ai-badge {
+  display: inline-block;
+  font-size: 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* PRESENZA GIOCATORI — pallini colorati in classifica */
+.lb-dot {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.lb-dot-online  { background: #5dca8a; }
+.lb-dot-ingame  { background: #e8a020; }
+.lb-dot-offline { background: #4a4845; }
+.lb-dot-cell { width: 20px; text-align: center; padding: 0 4px !important; }
 </style>
 
 <!-- SCREEN: LOGIN -->
@@ -192,12 +239,12 @@
     <div class="lobby-btns">
       <div class="lobby-btn" id="btn-quickmatch">⚔ Partita rapida</div>
       <div class="lobby-btn" id="btn-invite">🔗 Invita amico</div>
-      <div class="lobby-btn-sec" id="btn-local">🖥 Gioca in locale</div>
+      <div class="lobby-btn-sec" id="btn-local">🤖 Gioca vs CPU</div>
     </div>
 
     <div class="lobby-section" style="display:flex;align-items:center;justify-content:space-between;">CLASSIFICA <a href="leaderboard.html" style="font-size:11px;color:var(--gold);text-decoration:none;letter-spacing:0.04em;">Vedi completa →</a></div>
     <table class="lb-table">
-      <thead><tr><th class="lb-rank">#</th><th>Giocatore</th><th>ELO</th><th>V</th><th>P</th></tr></thead>
+      <thead><tr><th class="lb-rank">#</th><th class="lb-dot-cell"></th><th>Giocatore</th><th>ELO</th><th>V</th><th>P</th></tr></thead>
       <tbody id="lb-body"></tbody>
     </table>
   </div>
@@ -232,6 +279,41 @@
       <div class="auth-sub mp-waiting-dots">In attesa che l'amico si unisca</div>
     </div>
     <button class="auth-btn-sec" id="btn-cancel-invite">Annulla</button>
+  </div>
+</div>
+
+
+<!-- SCREEN: AI DIFFICULTY -->
+<div class="screen" id="screen-ai-difficulty">
+  <div class="auth-box" style="text-align:center">
+    <div class="auth-title">🤖 Gioca vs CPU</div>
+    <div class="auth-sub" style="margin-bottom:28px">Scegli la difficoltà dell'avversario</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+      <button class="ai-diff-btn" id="btn-ai-easy" onclick="window.playVsAI('easy')">
+        <span class="ai-diff-icon">🎲</span>
+        <div>
+          <div class="ai-diff-label">Facile</div>
+          <div class="ai-diff-desc">Sceglie carte a caso, con preferenza per quelle rare. Perfetto per imparare.</div>
+        </div>
+      </button>
+      <button class="ai-diff-btn" id="btn-ai-medium" onclick="window.playVsAI('medium')">
+        <span class="ai-diff-icon">⚔</span>
+        <div>
+          <div class="ai-diff-label">Medio</div>
+          <div class="ai-diff-desc">Valuta ogni carta e sceglie la mossa migliore per il turno in corso. Può sbagliare.</div>
+        </div>
+      </button>
+      <button class="ai-diff-btn" id="btn-ai-hard" onclick="window.playVsAI('hard')">
+        <span class="ai-diff-icon">💀</span>
+        <div>
+          <div class="ai-diff-label">Difficile</div>
+          <div class="ai-diff-desc">Pianifica entrambe le mosse del turno e valuta la posizione sul campo. Raramente sbaglia.</div>
+        </div>
+      </button>
+    </div>
+
+    <button class="auth-btn-sec" onclick="window.showScreen('screen-lobby')">← Torna alla lobby</button>
   </div>
 </div>
 
@@ -424,6 +506,6 @@
 </div>
 
 <!-- Moduli caricati in ordine: firebase → shared → game → matchmaking → auth -->
-<script type="module" src="auth.js?v=1.3.5"></script>
+<script type="module" src="auth.js?v=1.4.0"></script>
 </body>
 </html>

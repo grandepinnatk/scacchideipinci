@@ -1,4 +1,4 @@
-# Scacchi dei Pinci — v1.3.3
+# Scacchi dei Pinci — v1.4.0
 
 Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
@@ -39,11 +39,41 @@ Timer **45 secondi** per mossa. Se un giocatore abbandona per più di 2 minuti, 
 
 ---
 
+## Gioca vs CPU
+
+Il pulsante "🤖 Gioca vs CPU" sostituisce "Gioca in locale" e apre una schermata di selezione difficoltà. Il giocatore umano è sempre G1; il CPU è sempre G2 e gioca automaticamente con un ritardo che simula il pensiero.
+
+| Difficoltà | Strategia |
+|------------|-----------|
+| **🎲 Facile** | Sceglie le carte con un weighted random proporzionale al valore (`val`). Non valuta il campo. Adatto per imparare. |
+| **⚔ Medio** | Simula ogni possibile inserimento (fino a 10 carte) e sceglie il delta di punteggio migliore. Ha un 10% di probabilità di scegliere la seconda opzione migliore. |
+| **💀 Difficile** | Ottimizza la coppia di carte del turno testando tutte le coppie ordinate (fino a 90 combinazioni). Aggiunge un bonus posizionale per la valutazione dello stato del campo. Raramente sbaglia. |
+
+Al termine della partita il giocatore torna automaticamente alla schermata di selezione difficoltà.
+
+Le partite vs CPU **non modificano ELO né statistiche** — solo le partite multiplayer online contano per la classifica.
+
+Il motore è implementato in `ai.js`, senza dipendenze da Firebase.
+
+---
+
 ## Lobby
 
 - **Statistiche personali** — Partite, Vittorie, ELO e Posizione in classifica globale
-- **Pulsanti di gioco** — Partita rapida, Invita amico, Gioca in locale
-- **Classifica globale** — Top 10 per ELO. Se non sei nei top 10, la tua riga appare separata in fondo
+- **Pulsanti di gioco** — Partita rapida, Invita amico, Gioca vs CPU
+- **Classifica globale** — Top 10 per ELO con pallino stato per ogni giocatore (🟢 online, 🟠 in gioco, ⚫ offline) e link "Vedi completa →" alla pagina classifica dedicata
+
+---
+
+## Classifica
+
+La pagina `leaderboard.html` mostra la classifica completa di tutti i giocatori registrati. Il design riprende integralmente quello della lobby: stessi font, stessa palette colori, stesso layout `.lobby-box`. La pagina include:
+
+- **Podio** — le prime tre posizioni evidenziate come stat-card con medaglie 🥇🥈🥉
+- **Classifica paginata** — tutti i giocatori ordinati per ELO con navigazione a pagine; menu a tendina per scegliere 10, 20 o 50 righe per pagina; indicatore "X–Y di N" e pulsanti con ellissi intelligente
+- **Apertura contestuale** — se l'utente è loggato, la vista si apre direttamente sulla pagina che contiene la propria riga
+- **Stato giocatore** — pallino colorato in ogni riga: 🟢 online, 🟠 in gioco, ⚫ offline (basato su `lastSeen` e campo `inGame` su Firebase)
+- **Evidenziazione** — la propria riga è sempre marcata in oro; le medaglie per i top 3 sono mantenute indipendentemente dalla pagina
 
 ---
 
@@ -64,6 +94,7 @@ Ogni pezzo ha valori C/R/V per le tre zone e un'illustrazione in stile pittura f
 
 ```
 index.html        — HTML + @font-face embedded
+leaderboard.html  — Pagina classifica completa (design lobby)
 admin.html        — Console di amministrazione
 style.css         — Tutti gli stili del gioco
 firebase.js       — Inizializzazione Firebase SDK
@@ -71,6 +102,7 @@ shared.js         — Stato condiviso (MP, getCurrentUser, showScreen)
 game.js           — Logica di gioco, render, animazioni, settings
 matchmaking.js    — Quick match, invite, sync online, timer, forfeit
 auth.js           — Autenticazione, lobby, ELO, classifica, bootstrap
+ai.js             — Motore AI (Facile / Medio / Difficile), nessuna dipendenza Firebase
 img/              — 40 illustrazioni PNG dei pezzi
 CHANGELOG.md      — Storia delle versioni
 ```

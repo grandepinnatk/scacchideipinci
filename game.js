@@ -1,7 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser, getCurrentUser } from './shared.js?v=1.3.5';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.4.0';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -318,6 +318,12 @@ export function doInsert() {
 
   if (G.over) {
     setTimeout(showWinner, 600);
+  } else {
+    // Se è attivo un AI e adesso tocca al PC (G2 = indice 1), pianifica la mossa
+    // Usiamo un accesso lazy a window._aiModule per evitare dipendenza circolare
+    if (window._aiModule && window._aiModule.AI.active && G.turn === 1) {
+      window._aiModule.scheduleMove();
+    }
   }
 }
 
@@ -340,10 +346,24 @@ export function showWinner() {
       title.style.color = '#ff6b47';
     }
   } else {
-    const w = G.pts[0] >= SETTINGS.winPts ? 'Giocatore 1' : 'Giocatore 2';
-    if (icon)  icon.textContent  = '🏆';
-    title.textContent = w + ' vince!';
-    title.style.color = '';
+    const aiActive = window._aiModule && window._aiModule.AI.active;
+    const p1Won = G.pts[0] >= SETTINGS.winPts;
+    if (aiActive) {
+      if (p1Won) {
+        if (icon) icon.textContent = '🏆';
+        title.textContent = 'Hai vinto!';
+        title.style.color = 'var(--gold)';
+      } else {
+        if (icon) icon.textContent = '🤖';
+        title.textContent = 'Il CPU ha vinto!';
+        title.style.color = '#ff6b47';
+      }
+    } else {
+      const w = p1Won ? 'Giocatore 1' : 'Giocatore 2';
+      if (icon) icon.textContent = '🏆';
+      title.textContent = w + ' vince!';
+      title.style.color = '';
+    }
   }
   score.textContent = `Punteggio finale: ${wp} – ${lp}`;
   // In online mode change button label to "Torna alla lobby"
@@ -354,6 +374,16 @@ export function showWinner() {
 
 export function resetGame() {
   document.getElementById('overlay').classList.remove('show');
+  // Se era una partita contro il PC, torna alla selezione difficoltà
+  if (window._aiModule && window._aiModule.AI.active) {
+    window._aiModule.cancelAI();
+    const { showScreen } = window._sharedModule || {};
+    if (showScreen) {
+      document.getElementById('app').style.display = 'none';
+      showScreen('screen-ai-difficulty');
+      return;
+    }
+  }
   initGame();
 }
 
@@ -412,9 +442,13 @@ export function renderBanner() {
     p1label = 'Giocatore 1';
     p2label = 'Giocatore 2';
   }
+  const aiActive = window._aiModule && window._aiModule.AI.active;
+  const diffLabel = aiActive ? { easy:'Facile', medium:'Medio', hard:'Difficile' }[window._aiModule.AI.difficulty] || '' : '';
+  const aiBadge   = (aiActive && G.turn === 1) ? ` <span class="ai-badge">CPU ${diffLabel}</span>` : '';
+
   const pn = G.turn === 0
     ? `<span class="hl-p1">${p1label}</span>`
-    : `<span class="hl-p2">${p2label}</span>`;
+    : `<span class="hl-p2">${p2label}${aiBadge}</span>`;
   const step = G.pieceStep + 1;
   const total = G.turnNum === 1 ? (G.turn === 0 ? 1 : 2) : 2;
   document.getElementById('tbanner').innerHTML =

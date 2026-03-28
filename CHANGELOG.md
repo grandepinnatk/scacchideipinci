@@ -2,41 +2,94 @@
 
 ---
 
+## [1.4.0] — 2026-03-28
+
+Questa release consolida tutte le funzionalità introdotte nelle versioni 1.3.8 e 1.3.9 e segna il passaggio a una versione major minore per la presenza di un motore di gioco completamente nuovo.
+
+### Motore AI — Gioca vs CPU (`ai.js`)
+
+Nuovo modulo `ai.js` (zero dipendenze Firebase) che implementa tre livelli di difficoltà. Il giocatore umano è sempre G1; il CPU è sempre G2 e pianifica le proprie mosse automaticamente dopo un ritardo variabile (500–1300 ms) che simula il pensiero.
+
+- **🎲 Facile** — weighted random proporzionale al valore `val` di ogni carta nel basket. Non valuta il campo né simula combattimenti. Adatto per imparare le meccaniche.
+- **⚔ Medio** — greedy a 1 passo: simula ogni possibile inserimento (fino a 10 carte), sceglie il delta `pts[1]−pts[0]` più favorevole. 10% di probabilità di optare per la seconda scelta migliore per simulare l'imperfezione umana.
+- **💀 Difficile** — ottimizzazione sulla coppia: testa tutte le coppie ordinate di carte (fino a 90 combinazioni per il doppio inserimento del turno) e aggiunge un bonus posizionale che valuta la forza di ogni carta in campo nella propria zona corrente. Raramente sbaglia.
+
+Il pulsante "Gioca in locale" è stato rinominato in **"🤖 Gioca vs CPU"** e reindirizzato a una nuova schermata di selezione difficoltà (`screen-ai-difficulty`) con tre pulsanti descrittivi. Al termine della partita il giocatore torna automaticamente alla selezione difficoltà.
+
+**Integrazione tecnica:** `game.js` chiama `window._aiModule.scheduleMove()` dopo ogni `doInsert()` quando `G.turn === 1` e `AI.active`; `auth.js` carica `ai.js` con `import()` dinamico e lo registra su `window._aiModule` / `window.playVsAI`; `matchmaking.js`: `playLocal()` reindirizza a `showAIDifficultyScreen()`. L'accesso tramite `window._aiModule` evita dipendenze circolari tra moduli ES.
+
+**UX:** badge `CPU Facile / Medio / Difficile` nel turn banner durante il turno del CPU; overlay finale con "Hai vinto! 🏆" o "Il CPU ha vinto! 🤖" invece del generico "Giocatore 2 vince!".
+
+### Partite vs CPU escluse dalle statistiche
+
+Le partite contro il motore AI **non modificano ELO, vittorie, sconfitte né partite giocate**. Solo le partite multiplayer online contano per la classifica. Aggiunto guard esplicito all'inizio di `updateEloStats` in `matchmaking.js`: se `window._aiModule.AI.active` è `true` la funzione ritorna immediatamente senza toccare Firebase.
+
+### Stato giocatore in classifica
+
+Ogni riga della classifica — sia nella tabella in lobby che nella pagina `leaderboard.html` — mostra un **pallino colorato** come seconda colonna, subito dopo il numero di posizione:
+
+- 🟢 **Verde** — online (`lastSeen` negli ultimi 5 minuti)
+- 🟠 **Arancio** — in gioco (`inGame: true` su Firebase)
+- ⚫ **Grigio scuro** — offline
+
+**Scritture su Firebase:** `matchmaking.js` scrive `inGame: true` su `/users/{uid}` all'avvio di ogni partita online (`startOnlineGame`) e `inGame: false` alla fine (`cleanupMP`). Il campo viene anche resettato a `false` in `ensureUserProfile` al login o ricaricamento pagina, per evitare stati bloccati in caso di crash.
+
+**Heartbeat presenza:** `auth.js` aggiorna `lastSeen` ogni 90 secondi tramite `setInterval` mentre il giocatore è in lobby, così il pallino verde rimane acceso per tutta la sessione e si spegne entro 5 minuti dalla chiusura della tab.
+
+**CSS:** `.lb-dot`, `.lb-dot-online`, `.lb-dot-ingame`, `.lb-dot-offline`, `.lb-dot-cell` aggiunti sia in `index.html` che in `leaderboard.html`. Colspan di tutte le tabelle classifica aggiornato da 5 a 6.
+
+---
+
+## [1.3.7] — 2026-03-27
+
+### Modifiche UI
+- **Leaderboard — paginazione completa** — la tabella mostra tutti i giocatori registrati con navigazione a pagine. Menu a tendina per scegliere 10, 20 o 50 righe per pagina. Barra di navigazione con prima/ultima pagina sempre visibili, finestra di 3 pagine intorno alla corrente, ellissi (`…`) per i salti. Indicatore testuale "X–Y di N". Al caricamento la vista si apre sulla pagina che contiene la propria riga
+
+---
+
+## [1.3.6] — 2026-03-27
+
+### Modifiche UI
+- **Leaderboard — restyling completo** — `leaderboard.html` ridisegnata con lo stesso sistema visivo della lobby: font `BurbankBig` embedded, palette CSS identica, layout `.lobby-box`
+- **Leaderboard — podio top 3** — sezione "PODIO" con `.stat-card` a griglia 3 colonne; primo posto evidenziato con `--goldbg` e bordo `--gold`
+- **Leaderboard — taglio intelligente** — primi 10 giocatori con separatore `· · ·` e riga utente contestuale
+
+---
+
 ## [1.3.5] — 2026-03-26
 
 ### Nuove funzionalità
-- **Pagina classifica completa** (`leaderboard.html`) — mostra tutti i giocatori registrati ordinati per ELO, con medaglie per i top 3, evidenziazione della propria riga e contatore totale giocatori. Pulsante "← Lobby" per tornare indietro
-- **Link in lobby** — il titolo "CLASSIFICA" nella lobby mostra un link "Vedi completa →" che apre `leaderboard.html`
+- **Pagina classifica completa** (`leaderboard.html`) — tutti i giocatori ordinati per ELO, medaglie top 3, evidenziazione propria riga, contatore totale, pulsante "← Lobby"
+- **Link in lobby** — titolo "CLASSIFICA" con link "Vedi completa →"
 
 ---
 
 ## [1.3.4] — 2026-03-26
 
 ### Correzioni
-- **Scroll pagina** — risolto bug per cui le pagine lunghe (lobby, autenticazione) venivano tagliate in alto e non era possibile scorrere. Il problema era `align-items:center` su `.screen.show` con `position:fixed`: quando il contenuto superava l'altezza della viewport, il flex center lo centrava rispetto all'altezza fissa tagliando la parte superiore. Corretto con `align-items:flex-start` e `margin:auto` sui box interni per mantenere la centratura quando c'è spazio sufficiente
+- **Scroll pagina** — risolto bug `align-items:center` su `.screen.show` con `position:fixed` che tagliava il contenuto in alto su viewport piccole
 
 ---
 
 ## [1.3.3] — 2026-03-26
 
 ### Modifiche UI
-- **Classifica** — ridotta a Top 10 (era 15). Se non sei nei top 10, la tua riga appare separata in fondo
-- **Tabella classifica** — font ridotto a 18px su desktop (era 24px)
+- **Classifica** — ridotta a Top 10; font tabella 18px su desktop
 
 ---
 
 ## [1.3.2] — 2026-03-26
 
 ### Nuove funzionalità
-- **Classifica** — estesa a 15 giocatori. Se l'utente non è nei top 15, la sua riga appare in fondo separata da `···`
-- **Statistiche personali** — aggiunta card **POSIZIONE** (`#N`) calcolata su tutti i giocatori; griglia passa da 3 a 4 colonne
+- **Classifica** — estesa a 15 giocatori con riga utente separata da `···`
+- **Statistiche personali** — card POSIZIONE (`#N`), griglia 4 colonne
 
 ---
 
 ## [1.3.1] — 2026-03-26
 
 ### Correzioni
-- **Classifica lobby** — aggiunto logging in console e gestione errori con messaggio visivo
+- **Classifica lobby** — gestione errori con messaggio visivo
 
 ---
 
@@ -50,14 +103,14 @@
 ## [1.2.9] — 2026-03-25
 
 ### Correzioni
-- **Classifica** — query `orderByChild` sostituita con lettura completa e ordinamento lato client
+- **Classifica** — ordinamento lato client invece di `orderByChild`
 
 ---
 
 ## [1.2.8] — 2026-03-25
 
 ### Correzioni
-- **Carte e pesi admin** — `applyAdminConfig` ora usa `PIECE_OVERRIDES` e riassegna `POOL = buildPool()`
+- **Carte e pesi admin** — `applyAdminConfig` usa `PIECE_OVERRIDES` e rigenera `POOL`
 
 ---
 

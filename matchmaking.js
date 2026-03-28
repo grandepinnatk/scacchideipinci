@@ -1,11 +1,11 @@
 // ─── matchmaking.js — quick match, invite, partita online, timer, forfeit ────
 
-import { db, auth }          from './firebase.js?v=1.3.5';
+import { db, auth }          from './firebase.js?v=1.4.0';
 import { ref, set, get, update, onValue, off, push, remove, query, orderByChild, limitToLast }
                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.3.5';
+import { MP, currentUser, setCurrentUser, getCurrentUser, TURN_TIMEOUT_MS, ABANDON_MS, showScreen, authCallbacks } from './shared.js?v=1.4.0';
 import { G, POOL, SETTINGS, tierOf, initGame, renderAll, showWinner,
-         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.3.5';
+         doInsert as _origDoInsert, resetGame as _origResetGame } from './game.js?v=1.4.0';
 
 // ─── QUICK MATCH ─────────────────────────────────────────────────────────────
 export async function showQuickMatch() {
@@ -273,6 +273,10 @@ export async function startOnlineGame(gameId, myIndex, opponentName) {
   MP.gameId        = gameId;
   MP.myIndex       = myIndex;
   MP.opponentName  = opponentName;
+  // Segna il giocatore come "in gioco" su Firebase (per il pallino arancio in classifica)
+  if (getCurrentUser()) {
+    update(ref(db,'users/'+getCurrentUser().uid), { inGame: true, lastSeen: Date.now() });
+  }
   MP.gameRef       = ref(db,'games/'+gameId+'/state');
   // Save for reconnect
   set(ref(db,'activeGame/'+getCurrentUser().uid), { gameId, myIndex, opponentName });
@@ -480,6 +484,10 @@ export async function cleanupMP(returnToLobby = true) {
   MP.gameId   = null;
   // Ripristina window.doInsert alla versione locale (non multiplayer)
   if (window._origDoInsert) window.doInsert = window._origDoInsert;
+  // Segna il giocatore come "non in gioco" su Firebase
+  if (getCurrentUser()) {
+    update(ref(db,'users/'+getCurrentUser().uid), { inGame: false, lastSeen: Date.now() });
+  }
 
   const btnReset = document.getElementById('btn-reset');
   if (btnReset) { btnReset.textContent='Nuova partita'; btnReset.style.color=''; btnReset.style.borderColor=''; }
@@ -491,6 +499,8 @@ export async function cleanupMP(returnToLobby = true) {
 // ─── ELO UPDATE ──────────────────────────────────────────────────────────────
 export async function updateEloStats(state) {
   if (!getCurrentUser()) return;
+  // Le partite vs CPU non modificano ELO né statistiche
+  if (window._aiModule && window._aiModule.AI.active) return;
   const won  = state.pts[MP.myIndex] >= SETTINGS.winPts || state.pts[MP.myIndex] > state.pts[1-MP.myIndex];
   const snap = await get(ref(db,'users/'+getCurrentUser().uid));
   if (!snap.exists()) return;
@@ -546,11 +556,13 @@ export function resetGame() {
 };
 
 // ─── LOCAL PLAY ──────────────────────────────────────────────────────────────
+export function showAIDifficultyScreen() {
+  showScreen('screen-ai-difficulty');
+}
+
+// Mantenuto per compatibilità interna
 export function playLocal() {
-  MP.isOnline = false;
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
-  document.getElementById('app').style.display = '';
-  initGame();
+  showAIDifficultyScreen();
 }
 
 // Aggiorna UI online dopo ogni renderAll (bottoni turno + nomi giocatori)
