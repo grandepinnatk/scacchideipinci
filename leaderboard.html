@@ -304,6 +304,7 @@ body {
   .lb-table th { font-size: 12px; padding: 6px 10px; }
   .stat-val { font-size: 28px; }
 }
+<<<<<<< HEAD
 
 /* PRESENZA GIOCATORI */
 .lb-dot {
@@ -315,6 +316,8 @@ body {
 .lb-dot-ingame  { background: #e8a020; }
 .lb-dot-offline { background: #4a4845; }
 .lb-dot-cell { width: 22px; text-align: center; padding: 0 4px !important; }
+=======
+>>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
 </style>
 </head>
 <body>
@@ -352,7 +355,10 @@ body {
       <thead>
         <tr>
           <th class="lb-rank">#</th>
+<<<<<<< HEAD
           <th class="lb-dot-cell"></th>
+=======
+>>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
           <th>Giocatore</th>
           <th>ELO</th>
           <th>V</th>
@@ -360,7 +366,11 @@ body {
         </tr>
       </thead>
       <tbody id="lb-body">
+<<<<<<< HEAD
         <tr><td colspan="6"><div class="spinner"></div></td></tr>
+=======
+        <tr><td colspan="5"><div class="spinner"></div></td></tr>
+>>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
       </tbody>
     </table>
 
@@ -444,6 +454,7 @@ function renderPage() {
       ? `<span>${MEDALS[i]}</span>`
       : `<span>${i + 1}</span>`;
 
+<<<<<<< HEAD
     const dot = u.inGame
       ? '<span class="lb-dot lb-dot-ingame" title="In gioco"></span>'
       : (u.lastSeen && (Date.now() - u.lastSeen) < 5 * 60 * 1000)
@@ -452,6 +463,10 @@ function renderPage() {
     tr.innerHTML = `
       <td class="lb-rank ${i < 3 ? 'top3' : ''}">${rankCell}</td>
       <td class="lb-dot-cell">${dot}</td>
+=======
+    tr.innerHTML = `
+      <td class="lb-rank ${i < 3 ? 'top3' : ''}">${rankCell}</td>
+>>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
       <td class="lb-name">${u.displayName || '?'}${isMe ? ' <span style="font-size:11px;color:var(--gold);opacity:0.8">(tu)</span>' : ''}</td>
       <td class="lb-elo">${u.elo || 1000}</td>
       <td class="lb-wins">${u.wins || 0}</td>
@@ -523,7 +538,11 @@ async function loadLeaderboard(uid) {
     const snap = await get(ref(db, 'users'));
     if (!snap.exists()) {
       document.getElementById('podio').innerHTML = '';
+<<<<<<< HEAD
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Nessun giocatore registrato</td></tr>';
+=======
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Nessun giocatore registrato</td></tr>';
+>>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
       metaEl.textContent = '';
       return;
     }
@@ -546,7 +565,11 @@ async function loadLeaderboard(uid) {
 
   } catch(e) {
     document.getElementById('podio').innerHTML = '';
+<<<<<<< HEAD
     tbody.innerHTML = `<tr><td colspan="6"><div class="err">Errore: ${e.message}</div></td></tr>`;
+=======
+    tbody.innerHTML = `<tr><td colspan="5"><div class="err">Errore: ${e.message}</div></td></tr>`;
+>>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
     metaEl.textContent = '';
   }
 }
