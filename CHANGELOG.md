@@ -2,6 +2,13 @@
 
 ---
 
+## [1.4.1] — 2026-03-28
+
+### Modifiche UI
+- **Rimosso header dalla pagina di gioco** — eliminati il div `.header` con il titolo "Scacchi dei Pinci" e il pulsante impostazioni `⚙` (`btn-settings-open`) dalla pagina di gioco. Il campo, il basket e i controlli occupano ora tutto lo spazio verticale disponibile senza intestazione superflua
+
+---
+
 ## [1.4.0] — 2026-03-28
 
 Questa release consolida le funzionalità introdotte nelle versioni 1.3.8 e 1.3.9, corregge tre bug nella modalità vs CPU e aggiunge il sorteggio del primo turno.

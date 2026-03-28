@@ -1,4 +1,4 @@
-# Scacchi dei Pinci — v1.4.0
+# Scacchi dei Pinci — v1.4.1
 
 Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
