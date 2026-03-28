@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # Scacchi dei Pinci — v1.4.0
-=======
-# Scacchi dei Pinci — v1.3.7
->>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
 
 Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
@@ -64,13 +60,8 @@ Il motore è implementato in `ai.js`, senza dipendenze da Firebase.
 ## Lobby
 
 - **Statistiche personali** — Partite, Vittorie, ELO e Posizione in classifica globale
-<<<<<<< HEAD
 - **Pulsanti di gioco** — Partita rapida, Invita amico, Gioca vs CPU
 - **Classifica globale** — Top 10 per ELO con pallino stato per ogni giocatore (🟢 online, 🟠 in gioco, ⚫ offline) e link "Vedi completa →" alla pagina classifica dedicata
-=======
-- **Pulsanti di gioco** — Partita rapida, Invita amico, Gioca in locale
-- **Classifica globale** — Top 10 per ELO con link "Vedi completa →" alla pagina classifica dedicata
->>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
 
 ---
 
@@ -81,10 +72,7 @@ La pagina `leaderboard.html` mostra la classifica completa di tutti i giocatori 
 - **Podio** — le prime tre posizioni evidenziate come stat-card con medaglie 🥇🥈🥉
 - **Classifica paginata** — tutti i giocatori ordinati per ELO con navigazione a pagine; menu a tendina per scegliere 10, 20 o 50 righe per pagina; indicatore "X–Y di N" e pulsanti con ellissi intelligente
 - **Apertura contestuale** — se l'utente è loggato, la vista si apre direttamente sulla pagina che contiene la propria riga
-<<<<<<< HEAD
 - **Stato giocatore** — pallino colorato in ogni riga: 🟢 online, 🟠 in gioco, ⚫ offline (basato su `lastSeen` e campo `inGame` su Firebase)
-=======
->>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
 - **Evidenziazione** — la propria riga è sempre marcata in oro; le medaglie per i top 3 sono mantenute indipendentemente dalla pagina
 
 ---

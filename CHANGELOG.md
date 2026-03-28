@@ -2,7 +2,6 @@
 
 ---
 
-<<<<<<< HEAD
 ## [1.4.0] — 2026-03-28
 
 Questa release consolida tutte le funzionalità introdotte nelle versioni 1.3.8 e 1.3.9 e segna il passaggio a una versione major minore per la presenza di un motore di gioco completamente nuovo.
@@ -45,27 +44,15 @@ Ogni riga della classifica — sia nella tabella in lobby che nella pagina `lead
 
 ### Modifiche UI
 - **Leaderboard — paginazione completa** — la tabella mostra tutti i giocatori registrati con navigazione a pagine. Menu a tendina per scegliere 10, 20 o 50 righe per pagina. Barra di navigazione con prima/ultima pagina sempre visibili, finestra di 3 pagine intorno alla corrente, ellissi (`…`) per i salti. Indicatore testuale "X–Y di N". Al caricamento la vista si apre sulla pagina che contiene la propria riga
-=======
-## [1.3.7] — 2026-03-27
-
-### Modifiche UI
-- **Leaderboard — paginazione completa** — la tabella mostra ora tutti i giocatori registrati con navigazione a pagine. Menu a tendina nella barra "CLASSIFICA COMPLETA" per scegliere tra 10, 20 o 50 righe per pagina. La barra di navigazione mostra sempre la prima e l'ultima pagina, una finestra di 3 pagine intorno a quella corrente, e ellissi (`…`) per i salti. Indicatore testuale "X–Y di N" per orientamento immediato. Al caricamento, se l'utente è loggato, la vista si apre direttamente sulla pagina che contiene la propria riga. Le medaglie 🥇🥈🥉 per i top 3 sono mantenute indipendentemente dalla pagina visualizzata
->>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
 
 ---
 
 ## [1.3.6] — 2026-03-27
 
 ### Modifiche UI
-<<<<<<< HEAD
 - **Leaderboard — restyling completo** — `leaderboard.html` ridisegnata con lo stesso sistema visivo della lobby: font `BurbankBig` embedded, palette CSS identica, layout `.lobby-box`
 - **Leaderboard — podio top 3** — sezione "PODIO" con `.stat-card` a griglia 3 colonne; primo posto evidenziato con `--goldbg` e bordo `--gold`
 - **Leaderboard — taglio intelligente** — primi 10 giocatori con separatore `· · ·` e riga utente contestuale
-=======
-- **Leaderboard — restyling completo** — `leaderboard.html` ridisegnata con lo stesso sistema visivo della lobby: font `BurbankBig` embedded, palette CSS identica (`--bg`, `--gold #e8a020`, `--p1`, `--p2`), layout `.lobby-box` con `border-radius-lg` e bordo `--border2`. Header con `.lobby-header` / `.lobby-title`, pulsante "← Lobby" nello stesso stile dei controlli di navigazione esistenti, sezioni con `.lobby-section` uppercase
-- **Leaderboard — podio top 3** — nuova sezione "PODIO" sopra la tabella, resa con le `.stat-card` a griglia 3 colonne della lobby; la card del primo posto è evidenziata con `--goldbg` e bordo `--gold`
-- **Leaderboard — taglio intelligente** — mostra i primi 10 giocatori; se l'utente è oltre la top 10, la sua riga appare dopo un separatore `· · ·` con i 3 giocatori adiacenti in classifica
->>>>>>> ca9653a161d236c1c4ab82e11771244aa0b066c3
 
 ---
 
