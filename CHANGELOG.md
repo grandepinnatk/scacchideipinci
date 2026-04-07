@@ -2,6 +2,24 @@
 
 ---
 
+## [1.4.4] — 2026-03-29
+
+### Nuove funzionalità
+- **Effetti sonori** (`audio.js`) — tutti i suoni sono sintetizzati al volo via Web Audio API, senza file audio esterni da caricare. Quattro eventi sonori distinti:
+  - **Selezione carta** — tick secco a due oscillatori (sine + square) quando una carta viene evidenziata nel basket
+  - **Giocata carta** — suono di lancio breve (sawtooth + sine con frequency ramp + noise burst) al momento dell'inserimento
+  - **Scorrimento carte** — whoosh direzionale (noise filtrato + sweep tonale) che si attiva 60ms dopo la giocata, sincronizzato con l'animazione di slide; il senso del suono varia in base alla direzione (destra/sinistra)
+  - **Combattimento** — impatto metallico (burst di rumore a due bande) con tonalità ascendente breve in caso di vittoria o suono neutro in caso di pareggio
+  - **Fine partita** — fanfara ascendente a 4 note (Do–Mi–Sol–Do) per vittoria; sequenza discendente a 4 note per sconfitta; applicati sia in modalità online che vs CPU che locale
+
+### Modifiche tecniche
+- Nuovo file `audio.js` (172 righe) esportato come modulo ES; importato da `game.js`
+- `SFX.setVolume(0..1)` disponibile per regolazioni future dal menu impostazioni
+- L'`AudioContext` viene riattivato al primo click utente (requisito sicurezza browser)
+- La deseleziona di una carta non produce suono (solo la selezione)
+
+---
+
 ## [1.4.3] — 2026-03-28
 
 ### Nuove funzionalità

@@ -141,7 +141,8 @@
     position: relative;
     overflow: hidden;
     transition: box-shadow 0.15s, border-color 0.15s;
-    height: 280px;
+    aspect-ratio: 1 / 2;   /* altezza = 2× larghezza → lane quadrate come le immagini 1:1 */
+    height: auto;
   }
   /* Castello: blu acciaio */
   .cell.zone-castello { background: rgba(50, 90, 140, 0.18); border-color: rgba(74, 140, 220, 0.35); }
