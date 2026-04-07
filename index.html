@@ -293,14 +293,7 @@
     <div class="lobby-header">
       <div class="lobby-title">Scacchi dei Pinci</div>
       <div style="display:flex;align-items:center;gap:12px">
-        <div class="theme-switcher-card">
-          <div class="theme-switcher-btns">
-            <button class="theme-btn active" data-theme-id="classic"      title="Classico"></button>
-            <button class="theme-btn"        data-theme-id="modern-dark"  title="Moderno scuro"></button>
-            <button class="theme-btn"        data-theme-id="modern-light" title="Moderno chiaro"></button>
-          </div>
-          <div class="theme-switcher-lbl">LAYOUT</div>
-        </div>
+        <button class="btn-theme-cycle" id="btn-theme-cycle-lobby" title="Cambia layout"></button>
         <div class="lobby-user">
           <div class="lobby-avatar" id="lobby-avatar">?</div>
           <div>
@@ -610,7 +603,7 @@
 // ─── TEMA — applicazione e persistenza ───────────────────────────────────────
 (function() {
   var THEMES = ['classic', 'modern-dark', 'modern-light'];
-  var saved  = localStorage.getItem('sdp-theme') || 'classic';
+  var saved  = localStorage.getItem('sdp-theme') || 'modern-light';
   if (!THEMES.includes(saved)) saved = 'classic';
 
   function applyTheme(t) {
@@ -646,24 +639,27 @@
   };
 
   function updateCycleBtn() {
-    var btn = document.getElementById('btn-theme-cycle');
-    if (!btn) return;
-    var t    = localStorage.getItem('sdp-theme') || 'classic';
-    // Calcola il PROSSIMO tema (il pulsante mostra dove si va, non dove si è)
+    var t    = localStorage.getItem('sdp-theme') || 'modern-light';
     var next = CYCLE_ORDER[(CYCLE_ORDER.indexOf(t) + 1) % CYCLE_ORDER.length];
     var d    = CYCLE_DATA[next];
-    btn.innerHTML = '<span class="btc-icon">' + d.icon + '</span>'
-                  + '<span class="btc-label">' + d.label + '</span>';
-    btn.setAttribute('data-current', t);
+    var html = '<span class="btc-icon">' + d.icon + '</span>'
+             + '<span class="btc-label">' + d.label + '</span>';
+    // Aggiorna tutti i pulsanti ciclo presenti nella pagina (lobby + in-game)
+    ['btn-theme-cycle', 'btn-theme-cycle-lobby'].forEach(function(id) {
+      var btn = document.getElementById(id);
+      if (!btn) return;
+      btn.innerHTML = html;
+      btn.setAttribute('data-current', t);
+    });
   }
 
-  // Inizializza il pulsante
+  // Inizializza i pulsanti
   updateCycleBtn();
 
-  // Click sul pulsante ciclo
+  // Click su qualsiasi pulsante ciclo
   document.addEventListener('click', function(e) {
-    if (!e.target.closest('#btn-theme-cycle')) return;
-    var t    = localStorage.getItem('sdp-theme') || 'classic';
+    if (!e.target.closest('.btn-theme-cycle')) return;
+    var t    = localStorage.getItem('sdp-theme') || 'modern-light';
     var next = CYCLE_ORDER[(CYCLE_ORDER.indexOf(t) + 1) % CYCLE_ORDER.length];
     applyTheme(next);
     updateCycleBtn();

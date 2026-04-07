@@ -294,9 +294,11 @@ export function doInsert() {
     }
     addLog(msg, true);
     flashCell(f.cell);
-    if (f.winner !== 0) bounceWinner(f.cell, f.winner);   // bounce visivo sulla vincente
     if (window._audioHooks) window._audioHooks.onCombat(f.winner);
   });
+
+  // Salva i vincitori per il bounce — va eseguito DOPO renderAll (che ricostruisce il DOM)
+  const bounceTargets = fights.filter(f => f.winner !== 0).map(f => ({ cell: f.cell, winner: f.winner }));
 
   // Rimpiazza il pezzo nel basket
   G.basket[G.selected] = makePiece();
@@ -327,6 +329,11 @@ export function doInsert() {
 
   checkWin();
   renderAll();
+
+  // Bounce sui vincitori — il DOM del campo è ora aggiornato da renderAll
+  if (bounceTargets.length > 0) {
+    setTimeout(() => bounceTargets.forEach(t => bounceWinner(t.cell, t.winner)), 0);
+  }
 
   if (G.over) {
     setTimeout(showWinner, 600);
