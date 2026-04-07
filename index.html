@@ -213,6 +213,45 @@
   background: rgba(0,0,0,0.18);
   pointer-events: none;
 }
+
+/* THEME CYCLE BUTTON (in-game) */
+.btn-theme-cycle {
+  flex: none;
+  width: 52px;
+  min-width: 52px;
+  padding: 6px 4px 4px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  user-select: none;
+  touch-action: manipulation;
+}
+.btn-theme-cycle:hover  { border-color: var(--gold); background: var(--bg3); }
+.btn-theme-cycle:active { transform: scale(0.93); }
+.btn-theme-cycle .btc-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.btn-theme-cycle .btc-label {
+  font-size: 9px;
+  font-family: 'BurbankBig', sans-serif;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+  text-transform: uppercase;
+  line-height: 1;
+}
+/* Colore sfondo per tema attivo */
+.btn-theme-cycle[data-current="classic"]      { background: #1a1917; border-color: rgba(232,160,32,0.5); }
+.btn-theme-cycle[data-current="modern-dark"]  { background: #111014; border-color: rgba(106,176,255,0.4); }
+.btn-theme-cycle[data-current="modern-light"] { background: #e8e3dc; border-color: rgba(26,111,196,0.4); }
+.btn-theme-cycle[data-current="modern-light"] .btc-label { color: #6b6560; }
 </style>
 
 <!-- SCREEN: LOGIN -->
@@ -454,6 +493,7 @@
       <div class="action-row">
         <button class="btn btn-insert" id="btn-ins" id="btn-ins" disabled>Gioca Carta</button>
         <button class="btn btn-small" id="btn-reset">Nuova partita</button>
+        <button class="btn-theme-cycle" id="btn-theme-cycle" title="Cambia layout"></button>
       </div>
 
       <!-- LOG (solo desktop: nella sidebar) -->
@@ -589,6 +629,38 @@
     var btn = e.target.closest('.theme-btn');
     if (!btn) return;
     applyTheme(btn.getAttribute('data-theme-id'));
+  });
+
+  // ─── Pulsante ciclo tema (in-game) ────────────────────────────────────────
+  var CYCLE_ORDER = ['classic', 'modern-dark', 'modern-light'];
+  var CYCLE_DATA  = {
+    'classic':      { icon: '🎨', label: 'Classic' },
+    'modern-dark':  { icon: '🌙', label: 'Scuro'   },
+    'modern-light': { icon: '☀️', label: 'Chiaro'  },
+  };
+
+  function updateCycleBtn() {
+    var btn = document.getElementById('btn-theme-cycle');
+    if (!btn) return;
+    var t    = localStorage.getItem('sdp-theme') || 'classic';
+    // Calcola il PROSSIMO tema (il pulsante mostra dove si va, non dove si è)
+    var next = CYCLE_ORDER[(CYCLE_ORDER.indexOf(t) + 1) % CYCLE_ORDER.length];
+    var d    = CYCLE_DATA[next];
+    btn.innerHTML = '<span class="btc-icon">' + d.icon + '</span>'
+                  + '<span class="btc-label">' + d.label + '</span>';
+    btn.setAttribute('data-current', t);
+  }
+
+  // Inizializza il pulsante
+  updateCycleBtn();
+
+  // Click sul pulsante ciclo
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#btn-theme-cycle')) return;
+    var t    = localStorage.getItem('sdp-theme') || 'classic';
+    var next = CYCLE_ORDER[(CYCLE_ORDER.indexOf(t) + 1) % CYCLE_ORDER.length];
+    applyTheme(next);
+    updateCycleBtn();
   });
 })();
 </script>
