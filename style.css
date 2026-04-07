@@ -129,9 +129,18 @@
     padding: 2px 0;
   }
   .field-row {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    display: flex;
+    flex-direction: row;
     gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;          /* nascondi scrollbar su mobile */
+  }
+  .field-row::-webkit-scrollbar { display: none; }
+  .cell {
+    flex: 0 0 110px;                /* stessa larghezza minima del basket */
+    min-width: 110px;
   }
   .cell {
     border: 1px solid var(--border);
@@ -233,25 +242,27 @@
     overflow: hidden;
     display: block;
     padding: 0;
+    /* Promuove a layer GPU: evita blurring da compositing software */
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
   .piece-chip.pc-p1 { background: transparent; border: 1.5px solid var(--p1border); }
   .piece-chip.pc-p2 { background: transparent; border: 1.5px solid var(--p2border); }
   .pc-img {
     width: 100%;
     height: 100%;
-    border-radius: 3px;
-    overflow: hidden;
+    /* Niente border-radius né overflow:hidden qui: li gestisce già .piece-chip padre */
     background: #0f0e0d;
     display: block;
-    transform: translateZ(0);   /* promuove a layer GPU → rendering più nitido */
   }
   .pc-img img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-    image-rendering: high-quality;
-    image-rendering: -webkit-optimize-contrast; /* Safari */
+    /* Forza rendering di qualità su tutti i browser */
+    image-rendering: auto;
+    -ms-interpolation-mode: bicubic;
   }
   .pc-info {
     position: absolute;
@@ -483,6 +494,14 @@
       flex: 0 0 55%;
       width: 55%;
     }
+    /* Plancia desktop: griglia fissa 5 colonne, niente scroll */
+    .field-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      overflow-x: unset;
+      overflow-y: unset;
+    }
+    .cell { flex: unset; min-width: unset; }
     .col-sidebar {
       flex: 0 0 calc(45% - 20px);
       width: calc(45% - 20px);
@@ -508,11 +527,12 @@
     .bcard { flex: unset; min-width: unset; }
     .bcv { font-size: 10px; padding: 1px 3px; font-family: sans-serif; }
 
-    /* Testo piece-chip in plancia — 1.5× rispetto a mobile */
-    .pc-name    { font-size: 14px; }
-    .pc-vals    { font-size: 21px; }
-    .pc-zone-hi { font-size: 24px; }
-    .pc-info    { padding: 6px 6px 5px; }
+    /* Testo piece-chip in plancia — 1.5× rispetto a mobile
+       Usiamo .piece-chip .pc-xxx per specificità (0,2,0) che batte .pc-p1 .pc-name */
+    .piece-chip .pc-name    { font-size: 14px; }
+    .piece-chip .pc-vals    { font-size: 21px; line-height: 1.15; }
+    .piece-chip .pc-zone-hi { font-size: 24px; }
+    .piece-chip .pc-info    { padding: 5px 5px 4px; }
 
     /* Ripristina dimensioni grandi per i box Pezzo 1/2 su desktop */
     .phase-slot { font-size: 22px; }
