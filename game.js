@@ -452,6 +452,33 @@ export function renderScore() {
     document.getElementById('sc1').querySelector('.sc-label').textContent = 'GIOCATORE 1';
     document.getElementById('sc2').querySelector('.sc-label').textContent = 'GIOCATORE 2';
   }
+
+  // Aggiorna avatar nelle score-card (usati dai temi moderni)
+  _updateScoreAvatars();
+}
+
+function _updateScoreAvatars() {
+  const avatarSVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>';
+  const user = getCurrentUser();
+
+  // Avatar P1
+  const av1 = document.getElementById('sc-avatar-1');
+  if (av1) {
+    if (MP.isOnline && MP.myIndex === 0 && user && user.photoURL) {
+      av1.innerHTML = '<img src="' + user.photoURL + '" alt="">';
+    } else {
+      av1.innerHTML = avatarSVG;
+    }
+  }
+  // Avatar P2
+  const av2 = document.getElementById('sc-avatar-2');
+  if (av2) {
+    if (MP.isOnline && MP.myIndex === 1 && user && user.photoURL) {
+      av2.innerHTML = '<img src="' + user.photoURL + '" alt="">';
+    } else {
+      av2.innerHTML = avatarSVG;
+    }
+  }
 }
 
 export function renderBanner() {

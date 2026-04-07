@@ -2,6 +2,24 @@
 
 ---
 
+## [1.4.3] — 2026-03-28
+
+### Nuove funzionalità
+- **Sistema temi** — tre layout selezionabili tramite tre pulsanti circolari posizionati in alto a destra nella lobby, accanto al nome utente. La scelta è persistente in `localStorage` (`sdp-theme`). Temi disponibili:
+  - ⬛ **Classico** — il design originale scuro con palette sabbia/oro, invariato
+  - 🌑 **Moderno Scuro** — sfondo quasi nero con sfumature viola, score-card orizzontali con avatar silhouette, bordi tier luminosi nelle bcard, celle campo con tonalità più saturi
+  - 🌕 **Moderno Chiaro** — sfondo marmo bianco con gradienti sottili, score-card con avatar, bcard su fondo bianco con gradienti colorati per rarità, testo scuro
+- **Score-card ridisegnate (temi moderni)** — layout orizzontale: avatar silhouette a sinistra di G1, a destra di G2; nome giocatore sopra il punteggio; barra di avanzamento nascosta; card attiva evidenziata con box-shadow colorato
+- **Avatar nelle score-card** — in partita online l'avatar reale del giocatore loggato (Google/Microsoft photo) appare nella propria score-card; altrimenti viene mostrata la silhouette SVG generica
+
+### Modifiche tecniche
+- Nuovo file `themes.css` (299 righe) con variabili CSS per ciascun tema tramite `[data-theme]` sull'elemento `<html>`; nessuna modifica a `style.css` esistente
+- `scoreboard` HTML arricchito con `.sc-avatar` e `.sc-text` per supportare il layout orizzontale dei temi moderni; compatibile con il tema classico (`.sc-avatar` nascosto via `display:none`)
+- `game.js`: nuova funzione `_updateScoreAvatars()` chiamata da `renderScore` per aggiornare gli avatar in base al contesto (online/AI/locale)
+- Script inline `(function(){...})()` applicato prima del primo paint per evitare flash di tema scorretto
+
+---
+
 ## [1.4.2] — 2026-03-28
 
 ### Nuove funzionalità

@@ -1,4 +1,4 @@
-# Scacchi dei Pinci — v1.4.2
+# Scacchi dei Pinci — v1.4.3
 
 Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
@@ -77,6 +77,18 @@ La pagina `leaderboard.html` mostra la classifica completa di tutti i giocatori 
 
 ---
 
+## Temi grafici
+
+Il layout del gioco è personalizzabile con tre temi selezionabili dai pulsanti circolari in alto a destra nella lobby. La scelta viene salvata nel browser.
+
+| Tema | Descrizione |
+|------|-------------|
+| ⬛ **Classico** | Design originale scuro con palette sabbia/oro |
+| 🌑 **Moderno Scuro** | Sfondo quasi nero con score-card orizzontali e avatar |
+| 🌕 **Moderno Chiaro** | Sfondo marmo bianco con bcard colorate su fondo chiaro |
+
+---
+
 ## I 40 Pezzi
 
 | Rarità | Forza | Limite in gioco |
@@ -99,6 +111,7 @@ index.html        — HTML + @font-face embedded
 leaderboard.html  — Pagina classifica completa (design lobby)
 admin.html        — Console di amministrazione
 style.css         — Tutti gli stili del gioco
+themes.css        — Variabili CSS per i tre temi (Classico, Moderno Scuro, Moderno Chiaro)
 firebase.js       — Inizializzazione Firebase SDK
 shared.js         — Stato condiviso (MP, getCurrentUser, showScreen)
 game.js           — Logica di gioco, render, animazioni, settings
