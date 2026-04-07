@@ -8,7 +8,7 @@
 //   playVsAI(difficulty)    — avvia una partita contro il PC
 //   cancelAI()              — resetta lo stato AI
 
-import { G, SETTINGS, zoneOf, makePiece, selectCard, doInsert as _origDoInsert } from './game.js?v=1.4.0';
+import { G, SETTINGS, zoneOf, makePiece, selectCard, canPlay, doInsert as _origDoInsert } from './game.js?v=1.4.0';
 
 // ─── Stato AI ─────────────────────────────────────────────────────────────────
 export const AI = {
@@ -82,10 +82,14 @@ function _makeMove() {
 // FACILE — weighted random: preferisce carte di rarità alta ma non valuta il campo
 // ═══════════════════════════════════════════════════════════════════════════════
 function _moveEasy() {
-  const basket = G.basket;
-  // Peso proporzionale al valore della carta (bias leggero verso carte migliori)
-  const weights = basket.map(p => p.val);
-  const idx = _weightedRandom(weights);
+  const cpuIdx = AI.humanIndex === 0 ? 1 : 0;
+  const basket  = G.basket;
+  // Filtra carte non giocabili; peso proporzionale al valore
+  const weights = basket.map(p => canPlay(p.tier, cpuIdx) ? p.val : 0);
+  // Fallback: se tutte bloccate (non dovrebbe accadere) usa qualsiasi carta
+  const anyPlayable = weights.some(w => w > 0);
+  const finalWeights = anyPlayable ? weights : basket.map(p => p.val);
+  const idx = _weightedRandom(finalWeights);
   _playCard(idx);
 }
 
@@ -137,6 +141,7 @@ function _moveHard() {
 function _scoreAllMoves() {
   const cpuIdx = AI.humanIndex === 0 ? 1 : 0;
   return G.basket.map((piece, idx) => {
+    if (!canPlay(piece.tier, cpuIdx)) return { idx, score: -Infinity };
     const score = _simulateInsert(G.pipe, G.pts, piece, cpuIdx);
     return { idx, score };
   });
@@ -147,11 +152,12 @@ function _bestPair() {
   let bestScore = -Infinity;
   let best = { first: 0, second: 0 };
 
+  const cpuIdxPair = AI.humanIndex === 0 ? 1 : 0;
   for (let i = 0; i < G.basket.length; i++) {
+    if (!canPlay(G.basket[i].tier, cpuIdxPair)) continue;
     // Stato dopo il primo inserimento
     const pipe1 = _clonePipe(G.pipe);
     const pts1  = [...G.pts];
-    const cpuIdxPair = AI.humanIndex === 0 ? 1 : 0;
     _applyInsert(pipe1, pts1, G.basket[i], cpuIdxPair);
 
     for (let j = 0; j < G.basket.length; j++) {

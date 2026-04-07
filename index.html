@@ -164,6 +164,54 @@
 .lb-dot-ingame  { background: #e8a020; }
 .lb-dot-offline { background: #4a4845; }
 .lb-dot-cell { width: 20px; text-align: center; padding: 0 4px !important; }
+
+/* VERSIONE APP */
+#app-version {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'BurbankBig', monospace;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* BADGE TIER IN PLANCIA (piece-chip) */
+.pc-tier {
+  display: inline-block;
+  font-size: 9px;
+  font-family: 'BurbankBig', sans-serif;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+.pc-tier-l { background: rgba(212,168,67,0.25); color: #d4a843; border: 1px solid rgba(212,168,67,0.5); }
+.pc-tier-e { background: rgba(160,80,220,0.25); color: #b06ae0; border: 1px solid rgba(160,80,220,0.5); }
+.pc-tier-r { background: rgba(74,158,255,0.2);  color: #4a9eff; border: 1px solid rgba(74,158,255,0.4); }
+.pc-tier-c { background: rgba(255,255,255,0.06); color: var(--text3); border: 1px solid var(--border); }
+
+/* CARTE NON GIOCABILI nel basket */
+.bcard.locked {
+  opacity: 0.38;
+  filter: grayscale(0.7);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.bcard.locked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(0,0,0,0.18);
+  pointer-events: none;
+}
 </style>
 
 <!-- SCREEN: LOGIN -->
@@ -497,6 +545,8 @@
     </div>
   </div>
 </div>
+
+<div id="app-version">v1.4.1</div>
 
 <!-- Moduli caricati in ordine: firebase → shared → game → matchmaking → auth -->
 <script type="module" src="auth.js?v=1.4.0"></script>

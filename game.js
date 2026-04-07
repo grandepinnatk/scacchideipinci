@@ -242,6 +242,9 @@ export function selectCard(idx) {
   if (G.over) return;
   // In online mode, block selection when it's not your turn
   if (MP.isOnline && G.turn !== MP.myIndex) return;
+  // Blocca selezione di carte non giocabili per limiti rarità
+  const card = G.basket[idx];
+  if (card && !canPlay(card.tier, G.turn)) return;
   G.selected = G.selected === idx ? -1 : idx;
   renderBasket();
   renderPhaseSlots();
@@ -513,7 +516,10 @@ export function renderField() {
       const vals = slot.p1.z.map((v, zi) =>
         zi === z ? `<span class="pc-zone-hi">${v}</span>` : v
       ).join('·');
-      d.innerHTML = `<div class="pc-img"><img src="${getPieceImg(slot.p1.name)}" alt="${slot.p1.name}" onerror="this.style.display='none'"></div><div class="pc-info"><div class="pc-name">${slot.p1.name}</div><div class="pc-vals">${vals}</div></div>`;
+      const t1 = tierOf(slot.p1.val);
+      const tCls1 = { l:'pc-tier-l', e:'pc-tier-e', r:'pc-tier-r', c:'pc-tier-c' }[t1];
+      const tLbl1 = { l:'L', e:'E', r:'R', c:'C' }[t1];
+      d.innerHTML = `<div class="pc-img"><img src="${getPieceImg(slot.p1.name)}" alt="${slot.p1.name}" onerror="this.style.display='none'"></div><div class="pc-info"><div class="pc-name">${slot.p1.name}<span class="pc-tier ${tCls1}">${tLbl1}</span></div><div class="pc-vals">${vals}</div></div>`;
       laneP1.appendChild(d);
     } else {
       laneP1.innerHTML = '<span class="lane-empty">G1 →</span>';
@@ -529,7 +535,10 @@ export function renderField() {
       const vals = slot.p2.z.map((v, zi) =>
         zi === z ? `<span class="pc-zone-hi">${v}</span>` : v
       ).join('·');
-      d.innerHTML = `<div class="pc-img"><img src="${getPieceImg(slot.p2.name)}" alt="${slot.p2.name}" onerror="this.style.display='none'"></div><div class="pc-info"><div class="pc-name">${slot.p2.name}</div><div class="pc-vals">${vals}</div></div>`;
+      const t2 = tierOf(slot.p2.val);
+      const tCls2 = { l:'pc-tier-l', e:'pc-tier-e', r:'pc-tier-r', c:'pc-tier-c' }[t2];
+      const tLbl2 = { l:'L', e:'E', r:'R', c:'C' }[t2];
+      d.innerHTML = `<div class="pc-img"><img src="${getPieceImg(slot.p2.name)}" alt="${slot.p2.name}" onerror="this.style.display='none'"></div><div class="pc-info"><div class="pc-name">${slot.p2.name}<span class="pc-tier ${tCls2}">${tLbl2}</span></div><div class="pc-vals">${vals}</div></div>`;
       laneP2.appendChild(d);
     } else {
       laneP2.innerHTML = '<span class="lane-empty">← G2</span>';
@@ -575,12 +584,65 @@ export function buildPhaseSlotsHTML(totalSlots) {
   return html;
 }
 
+
+// ─── LIMITI RARITÀ ────────────────────────────────────────────────────────────
+
+/**
+ * Conta le carte non-comuni (r/e/l) del giocatore playerIdx attualmente in pipe.
+ * Ritorna { l, e, r, nonCommon } dove nonCommon = l+e+r.
+ */
+function countTiersInPipe(playerIdx) {
+  let l = 0, e = 0, r = 0;
+  G.pipe.forEach(slot => {
+    const piece = playerIdx === 0 ? slot.p1 : slot.p2;
+    if (!piece) return;
+    const t = tierOf(piece.val);
+    if (t === 'l') l++;
+    else if (t === 'e') e++;
+    else if (t === 'r') r++;
+  });
+  return { l, e, r, nonCommon: l + e + r };
+}
+
+/**
+ * Verifica se il giocatore playerIdx può giocare una carta con tier `tier`.
+ * Regole:
+ *   Comune (c): sempre giocabile.
+ *   Raro (r):   nonCommon <= 2 (dopo inserimento) E niente Leggendari.
+ *   Epico (e):  nonCommon <= 2 (dopo ins.) E niente Leggendari E niente altri Epici.
+ *   Leggendario(l): deve essere l'unica non-comune in gioco (dopo ins.).
+ *
+ * "Dopo inserimento" = contiamo come se il pezzo fosse già in pipe.
+ * Semplificazione: valutiamo sempre PRIMA dell'inserimento e aggiungiamo 1.
+ */
+export function canPlay(tier, playerIdx) {
+  if (tier === 'c') return true;
+  const { l, e, r, nonCommon } = countTiersInPipe(playerIdx);
+  // Simuliamo l'inserimento della carta
+  const newNC = nonCommon + 1;
+  if (tier === 'r') {
+    return newNC <= 2 && l === 0;
+  }
+  if (tier === 'e') {
+    return newNC <= 2 && l === 0 && e === 0;
+  }
+  if (tier === 'l') {
+    return newNC === 1; // sarà l'unica non-comune
+  }
+  return true;
+}
+
 export function renderBasket() {
   const el = document.getElementById('bgrid');
   el.innerHTML = '';
   G.basket.forEach((p, i) => {
     const d = document.createElement('div');
-    d.className = 'bcard tier-' + p.tier + (i === G.selected ? ' selected' : '') + (G.over ? ' disabled' : '');
+    // Determina se la carta è giocabile dal giocatore corrente
+    const locked = !G.over && !canPlay(p.tier, G.turn);
+    d.className = 'bcard tier-' + p.tier
+      + (i === G.selected ? ' selected' : '')
+      + (G.over ? ' disabled' : '')
+      + (locked ? ' locked' : '');
     const tierCls = { l:'rb-l', e:'rb-e', r:'rb-r', c:'rb-c' }[p.tier];
     const tierLbl = { l:'Leggendario', e:'Epico', r:'Raro', c:'Comune' }[p.tier];
     d.innerHTML = `
@@ -600,6 +662,7 @@ export function renderBasket() {
       fn();
     };
     let clickTimer = null;
+    if (locked) { el.appendChild(d); return; } // carta non giocabile: no listener
     d.addEventListener('click', (e) => {
       if (clickTimer) {
         clearTimeout(clickTimer);

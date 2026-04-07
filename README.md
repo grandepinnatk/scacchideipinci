@@ -1,4 +1,4 @@
-# Scacchi dei Pinci — v1.4.1
+# Scacchi dei Pinci — v1.4.2
 
 Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
@@ -79,12 +79,14 @@ La pagina `leaderboard.html` mostra la classifica completa di tutti i giocatori 
 
 ## I 40 Pezzi
 
-| Rarità | Forza |
-|--------|-------|
-| 🟡 Leggendario | val ≥ 20 |
-| 🟣 Epico | val 15–19 |
-| 🔵 Raro | val 10–14 |
-| ⚫ Comune | val < 10 |
+| Rarità | Forza | Limite in gioco |
+|--------|-------|-----------------|
+| 🟡 Leggendario | val ≥ 20 | Deve essere l'unica carta non-comune in campo |
+| 🟣 Epico | val 15–19 | Max 2 non-comuni totali, nessuna Leggendaria, al massimo 1 Epica |
+| 🔵 Raro | val 10–14 | Max 2 non-comuni totali, nessuna Leggendaria |
+| ⚫ Comune | val < 10 | Sempre giocabile |
+
+Le carte che violano i limiti appaiono grigie e non selezionabili nel basket. Ogni piece-chip nel campo di gioco mostra un badge colorato (`C`/`R`/`E`/`L`) accanto al nome.
 
 Ogni pezzo ha valori C/R/V per le tre zone e un'illustrazione in stile pittura fiamminga (Bruegel, Bosch, van Eyck).
 

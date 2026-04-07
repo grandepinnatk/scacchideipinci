@@ -2,6 +2,27 @@
 
 ---
 
+## [1.4.2] — 2026-03-28
+
+### Nuove funzionalità
+- **Limiti di gioco per rarità** — introdotte regole che limitano il numero di carte non-comuni in gioco contemporaneamente per ciascun giocatore, basate sui conteggi in pipe al momento dell'inserimento:
+  - **Rara (R):** giocabile solo se dopo l'inserimento si hanno al massimo 2 carte non-comuni in gioco e nessuna Leggendaria
+  - **Epica (E):** giocabile solo se dopo l'inserimento si hanno al massimo 2 carte non-comuni, nessuna Leggendaria e nessun'altra Epica già in gioco (al massimo 1 Epica alla volta)
+  - **Leggendaria (L):** giocabile solo se sarà l'unica carta non-comune in gioco (deve stare da sola)
+  - **Comune (C):** sempre giocabile
+- **Carte non giocabili grigie nel basket** — le carte che non rispettano i limiti di rarità vengono rese con classe `.bcard.locked`: opacità ridotta, desaturazione, cursore `not-allowed` e overlay scuro. Non sono selezionabili né cliccabili
+- **Badge tier in plancia** — ogni piece-chip nel campo di gioco mostra un piccolo badge colorato accanto al nome: `C` grigio, `R` blu, `E` viola, `L` oro. Corrisponde ai badge già presenti nel basket
+- **Versione app visibile** — numero di versione mostrato in basso al centro dello schermo in ogni schermata, sovrapposto alla UI tramite `position:fixed`
+- **AI rispetta i limiti di rarità** — il motore AI (tutte e tre le difficoltà) non gioca carte che violerebbero i limiti: Facile assegna peso 0 alle carte bloccate, Medio e Difficile assegnano `−Infinity` ai candidati non giocabili
+
+### Modifiche tecniche
+- Nuova funzione `canPlay(tier, playerIdx)` esportata da `game.js`: conta i tier in pipe per il giocatore e applica le regole
+- Nuova funzione `countTiersInPipe(playerIdx)`: ritorna `{ l, e, r, nonCommon }`
+- `selectCard` rifiuta la selezione di carte locked prima di modificare `G.selected`
+- `renderBasket`: `locked` calcolato per ogni carta; le card locked ricevono `pointer-events:none` e nessun listener eventi
+
+---
+
 ## [1.4.1] — 2026-03-28
 
 ### Modifiche UI
