@@ -151,6 +151,63 @@ export function makePiece() {
   const t = POOL[Math.floor(Math.random() * POOL.length)];
   return { name: t.name, z: [...t.z], val: t.val, tier: tierOf(t.val), id: uid++ };
 }
+
+/**
+ * Genera il basket di 10 carte rispettando i vincoli di composizione:
+ *   - Comuni >= 5  (almeno metà basket deve essere comune)
+ *   - Non-comuni >= 1  (almeno una carta non-comune sempre presente)
+ *
+ * Algoritmo: genera 10 carte casuali dalla pool. Se il risultato non
+ * rispetta i vincoli, sostituisce carte finché non li soddisfa.
+ */
+export function makeBasket() {
+  // ── Regola composizione basket ────────────────────────────────────────────
+  // Comuni     >= 5  (slot 0-4 garantiti)
+  // Non-comuni >= 2  (slot 5-9, almeno 2)
+  // Totale = 10
+  //
+  // Strategia: genera 10 carte casualmente dalla POOL, poi aggiusta
+  // finché non soddisfano entrambi i vincoli.
+
+  const commonPool    = POOL.filter(p => tierOf(p.val) === 'c');
+  const nonCommonPool = POOL.filter(p => tierOf(p.val) !== 'c');
+
+  function pick(pool) {
+    const t = pool[Math.floor(Math.random() * pool.length)];
+    return { name: t.name, z: [...t.z], val: t.val, tier: tierOf(t.val), id: uid++ };
+  }
+
+  const basket = Array(10).fill(null).map(makePiece);
+  const isCommon = p => p.tier === 'c';
+
+  // ── Passo 1: porta le comuni a >= 5 sostituendo eccedenze non-comuni ──────
+  if (commonPool.length > 0) {
+    const ncIdxs = basket.map((p, i) => isCommon(p) ? -1 : i).filter(i => i >= 0);
+    let commons = 10 - ncIdxs.length;
+    // Sostituiamo non-comuni in eccesso con comuni (lasciamo min 2 non-comuni)
+    let r = 0;
+    while (commons < 5 && r < ncIdxs.length - 2) {
+      basket[ncIdxs[r]] = pick(commonPool);
+      commons++;
+      r++;
+    }
+  }
+
+  // ── Passo 2: porta le non-comuni a >= 2 sostituendo comuni in eccesso ─────
+  if (nonCommonPool.length > 0) {
+    const cIdxs = basket.map((p, i) => isCommon(p) ? i : -1).filter(i => i >= 0);
+    let nonCommons = 10 - cIdxs.length;
+    // Sostituiamo comuni in eccesso con non-comuni (lasciamo min 5 comuni)
+    let r = 0;
+    while (nonCommons < 2 && r < cIdxs.length - 5) {
+      basket[cIdxs[r]] = pick(nonCommonPool);
+      nonCommons++;
+      r++;
+    }
+  }
+
+  return basket;
+}
 // cella 0,1 → zona 0 ; cella 2 → zona 1 ; cella 3,4 → zona 2
 export function zoneOf(c) { return c <= 1 ? 0 : c === 2 ? 1 : 2; }
 
@@ -163,7 +220,7 @@ export function initGame() {
     turn:      0,
     pieceStep: 0,
     pipe:      Array(5).fill(null).map(() => ({ p1: null, p2: null })),
-    basket:    Array(10).fill(null).map(makePiece),
+    basket:    makeBasket(),
     selected:  -1,
     log:       [],
     over:      false,
