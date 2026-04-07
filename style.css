@@ -152,6 +152,19 @@
   .cell.zone-villaggio { background: rgba(50, 110, 60, 0.18); border-color: rgba(80, 160, 80, 0.35); }
   .cell.combat-flash { box-shadow: 0 0 0 2px var(--gold); border-color: var(--gold); }
 
+  /* Bounce visivo sulla carta vincente */
+  @keyframes bounce-win {
+    0%   { transform: scale(1);    }
+    30%  { transform: scale(1.10); }
+    55%  { transform: scale(0.96); }
+    75%  { transform: scale(1.04); }
+    100% { transform: scale(1);    }
+  }
+  .piece-chip.bounce-win {
+    animation: bounce-win 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    z-index: 2;
+  }
+
 @keyframes slide-right {
     0%   { transform: translateX(-18px); opacity: 0; }
     60%  { transform: translateX(3px);   opacity: 1; }
@@ -230,14 +243,16 @@
     overflow: hidden;
     background: #0f0e0d;
     display: block;
+    transform: translateZ(0);   /* promuove a layer GPU → rendering più nitido */
   }
   .pc-img img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    image-rendering: high-quality;
+    image-rendering: -webkit-optimize-contrast; /* Safari */
   }
-  .pc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .pc-info {
     position: absolute;
     bottom: 0;
@@ -492,6 +507,12 @@
     }
     .bcard { flex: unset; min-width: unset; }
     .bcv { font-size: 10px; padding: 1px 3px; font-family: sans-serif; }
+
+    /* Testo piece-chip in plancia — 1.5× rispetto a mobile */
+    .pc-name    { font-size: 14px; }
+    .pc-vals    { font-size: 21px; }
+    .pc-zone-hi { font-size: 24px; }
+    .pc-info    { padding: 6px 6px 5px; }
 
     /* Ripristina dimensioni grandi per i box Pezzo 1/2 su desktop */
     .phase-slot { font-size: 22px; }

@@ -2,6 +2,20 @@
 
 ---
 
+## [1.4.5] — 2026-03-29
+
+### Modifiche architettura
+- **Gestione audio separata in modulo dedicato** (`audio-hooks.js`) — `game.js` non importa più direttamente `audio.js`. Al suo posto espone eventi tramite `window._audioHooks.onXxx()`. Il nuovo file `audio-hooks.js` (42 righe) è l'unico punto di contatto tra la logica di gioco e il sintetizzatore audio: importa `SFX` da `audio.js` e mappa ogni evento al suono corrispondente. Per silenziare o sostituire l'intero sistema audio è sufficiente modificare solo questo file. `audio-hooks.js` viene caricato dinamicamente da `auth.js` con `import()` insieme agli altri moduli lazy.
+
+### Nuove funzionalità
+- **Bounce visivo sulla carta vincente** — al termine di ogni combattimento la `piece-chip` del vincitore esegue un'animazione `bounce-win`: scale 1→1.10→0.96→1.04→1 in 420ms con curva elastica. La funzione `bounceWinner(cellIdx, winner)` viene chiamata direttamente da `doInsert` subito dopo `flashCell`, 150ms prima del re-render, così il chip è già aggiornato quando il bounce parte. In caso di pareggio nessun bounce viene eseguito.
+
+### Modifiche tecniche
+- `game.js`: rimossi import e chiamate dirette a `SFX`; aggiunto `bounceWinner` esportato; `selectCard` e `doInsert` chiamano `window._audioHooks` solo se definito (graceful degradation se audio non disponibile)
+- `style.css`: aggiunto `@keyframes bounce-win` e `.piece-chip.bounce-win` vicino a `.combat-flash`
+
+---
+
 ## [1.4.4] — 2026-03-29
 
 ### Nuove funzionalità

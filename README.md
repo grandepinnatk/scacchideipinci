@@ -1,4 +1,4 @@
-# Scacchi dei Pinci — v1.4.4
+# Scacchi dei Pinci — v1.4.5
 
 Un gioco di strategia per 2 giocatori ispirato ai racconti di Jorge Luis Borges.
 
@@ -118,7 +118,8 @@ game.js           — Logica di gioco, render, animazioni, settings
 matchmaking.js    — Quick match, invite, sync online, timer, forfeit
 auth.js           — Autenticazione, lobby, ELO, classifica, bootstrap
 ai.js             — Motore AI (Facile / Medio / Difficile), nessuna dipendenza Firebase
-audio.js          — Effetti sonori sintetizzati via Web Audio API (nessun file esterno)
+audio.js          — Sintetizzatore audio via Web Audio API (nessun file esterno)
+audio-hooks.js    — Collegamento eventi di gioco → audio (unico punto di contatto)
 img/              — 40 illustrazioni PNG dei pezzi
 CHANGELOG.md      — Storia delle versioni
 ```

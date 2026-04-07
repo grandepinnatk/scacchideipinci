@@ -1,8 +1,7 @@
 // ─── game.js — logica di gioco, render, settings ─────────────────────────────
 // Nessuna dipendenza da Firebase — può essere testato in isolamento
 
-import { MP, currentUser, getCurrentUser } from './shared.js?v=1.4.0';
-import { SFX } from './audio.js?v=1.4.2';
+import { MP, currentUser, getCurrentUser } from './shared.js?v=1.4.5';
 
 // ─── DATI ────────────────────────────────────────────────────────────────────
 export const ZONE_NAMES = ['Castello', 'Re', 'Villaggio'];
@@ -248,7 +247,7 @@ export function selectCard(idx) {
   if (card && !canPlay(card.tier, G.turn)) return;
   const wasSelected = G.selected === idx;
   G.selected = wasSelected ? -1 : idx;
-  if (!wasSelected) SFX.select();   // suono solo quando si seleziona (non deseleziona)
+  if (!wasSelected && window._audioHooks) window._audioHooks.onSelect();
   renderBasket();
   renderPhaseSlots();
   document.getElementById('btn-ins').disabled = G.selected < 0;
@@ -266,18 +265,18 @@ export function doInsert() {
 
   // Inserisci nella pipe
   insertIntoPipe(piece);
+  if (window._audioHooks) window._audioHooks.onPlay();
 
   // Classe animazione scorrimento carte sul campo
   const fieldEl = document.getElementById('field');
   const slideClass = G.turn === 0 ? 'field-push-right' : 'field-push-left';
   const slideDir   = G.turn === 0 ? 'right' : 'left';
-  SFX.play();                         // suono giocata carta
   if (fieldEl) {
     fieldEl.classList.remove('field-push-right', 'field-push-left');
     fieldEl.classList.add(slideClass);
     setTimeout(() => {
       fieldEl.classList.remove(slideClass);
-      SFX.slide(slideDir);            // suono scorrimento (leggermente ritardato)
+      if (window._audioHooks) window._audioHooks.onSlide(slideDir);
     }, 60);
   }
 
@@ -295,7 +294,8 @@ export function doInsert() {
     }
     addLog(msg, true);
     flashCell(f.cell);
-    SFX.combat(f.winner);             // suono combattimento
+    if (f.winner !== 0) bounceWinner(f.cell, f.winner);   // bounce visivo sulla vincente
+    if (window._audioHooks) window._audioHooks.onCombat(f.winner);
   });
 
   // Rimpiazza il pezzo nel basket
@@ -355,12 +355,12 @@ export function showWinner() {
       if (icon)  icon.textContent  = '🏆';
       title.textContent = 'HAI VINTO!';
       title.style.color = 'var(--gold)';
-      SFX.win();
+      if (window._audioHooks) window._audioHooks.onWin();
     } else {
       if (icon)  icon.textContent  = '💀';
       title.textContent = 'HAI PERSO!';
       title.style.color = '#ff6b47';
-      SFX.lose();
+      if (window._audioHooks) window._audioHooks.onLose();
     }
   } else {
     const aiActive = window._aiModule && window._aiModule.AI.active;
@@ -373,16 +373,16 @@ export function showWinner() {
         if (icon) icon.textContent = '🏆';
         title.textContent = 'Hai vinto!';
         title.style.color = 'var(--gold)';
-        SFX.win();
+        if (window._audioHooks) window._audioHooks.onWin();
       } else {
         if (icon) icon.textContent = '🤖';
         title.textContent = 'Il CPU ha vinto!';
         title.style.color = '#ff6b47';
-        SFX.lose();
+        if (window._audioHooks) window._audioHooks.onLose();
       }
     } else {
       const w = p1Won ? 'Giocatore 1' : 'Giocatore 2';
-      SFX.win();
+      if (window._audioHooks) window._audioHooks.onWin();
       if (icon) icon.textContent = '🏆';
       title.textContent = w + ' vince!';
       title.style.color = '';
@@ -415,6 +415,21 @@ export function flashCell(idx) {
   if (!cells[idx]) return;
   cells[idx].classList.add('combat-flash');
   setTimeout(() => cells[idx].classList.remove('combat-flash'), 700);
+}
+
+// Bounce visivo sul piece-chip vincente dopo un combattimento
+// winner: 1 = G1 (lane-p1), 2 = G2 (lane-p2)
+export function bounceWinner(cellIdx, winner) {
+  const cells = document.querySelectorAll('.cell');
+  if (!cells[cellIdx]) return;
+  const laneClass = winner === 1 ? '.lane-p1 .piece-chip' : '.lane-p2 .piece-chip';
+  const chip = cells[cellIdx].querySelector(laneClass);
+  if (!chip) return;
+  chip.classList.remove('bounce-win');
+  // Forza reflow per riavviare l'animazione se già in corso
+  void chip.offsetWidth;
+  chip.classList.add('bounce-win');
+  chip.addEventListener('animationend', () => chip.classList.remove('bounce-win'), { once: true });
 }
 
 export function addLog(html, isCombat) {

@@ -8,7 +8,7 @@
 //   playVsAI(difficulty)    — avvia una partita contro il PC
 //   cancelAI()              — resetta lo stato AI
 
-import { G, SETTINGS, zoneOf, makePiece, selectCard, canPlay, doInsert as _origDoInsert } from './game.js?v=1.4.0';
+import { G, SETTINGS, zoneOf, makePiece, selectCard, canPlay, doInsert as _origDoInsert } from './game.js?v=1.4.5';
 
 // ─── Stato AI ─────────────────────────────────────────────────────────────────
 export const AI = {

@@ -603,7 +603,7 @@
   </div>
 </div>
 
-<div id="app-version">v1.4.1</div>
+<div id="app-version"></div>
 
 
 <script>
@@ -623,6 +623,12 @@
 
   // Applica subito (prima del paint per evitare flash)
   applyTheme(saved);
+
+  // Versione: iniettata dinamicamente da APP_VERSION in shared.js
+  // Lo facciamo qui così è disponibile subito anche prima che i moduli ES siano pronti
+  // Il valore definitivo viene riscritto da auth.js dopo il caricamento di shared.js
+  var verEl = document.getElementById('app-version');
+  if (verEl && !verEl.textContent) verEl.textContent = 'v…';
 
   // Listener delegato — funziona anche dopo eventuali re-render della lobby
   document.addEventListener('click', function(e) {

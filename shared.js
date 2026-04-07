@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.4.0";
+export const APP_VERSION = "1.4.5";
 
 // ─── shared.js — stato condiviso tra auth, matchmaking e game ────────────────
 

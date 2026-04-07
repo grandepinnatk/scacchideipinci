@@ -1,6 +1,6 @@
 // ─── auth.js — autenticazione, profilo utente, lobby, ELO ────────────────────
 
-import { auth, db }           from './firebase.js?v=1.4.0';
+import { auth, db }           from './firebase.js?v=1.4.5';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signInWithPopup, signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, OAuthProvider,
@@ -8,12 +8,12 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { ref, set, get, update, remove, onValue, off, query }
                                 from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks } from './shared.js?v=1.4.0';
-import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.4.0';
+import { setCurrentUser, getCurrentUser, MP, showScreen, authCallbacks, APP_VERSION } from './shared.js?v=1.4.5';
+import { initGame, renderAll, switchTab, resetPieceValues, closeSettings, applySettings, openSettings, applyAdminConfig } from './game.js?v=1.4.5';
 import { cleanupMP, playLocal, showQuickMatch, cancelQuickMatch,
          showInvite, cancelInvite, copyCode, joinByCode,
          forfeitGame, confirmForfeit, cancelForfeit, doInsert, resetGame,
-         startOnlineGame, showAIDifficultyScreen } from './matchmaking.js?v=1.4.0';
+         startOnlineGame, showAIDifficultyScreen } from './matchmaking.js?v=1.4.5';
 
 // ─── AUTH UI ─────────────────────────────────────────────────────────────────
 export function switchToRegister() {
@@ -326,12 +326,21 @@ authCallbacks.loadLeaderboard = loadLeaderboard;
 document.getElementById('app').style.display = 'none';
 initGame(); // populate G with valid structure before any render
 
+// Aggiorna il div versione con il valore reale da shared.js
+(function() {
+  var el = document.getElementById('app-version');
+  if (el) el.textContent = 'v' + APP_VERSION;
+})();
+
 // ─── Esposizione moduli per ai.js (accesso lazy, senza dipendenza circolare) ──
-import('./shared.js?v=1.4.0').then(m => { window._sharedModule = m; });
-import('./game.js?v=1.4.0').then(m   => { window._gameModule   = m; });
-import('./ai.js?v=1.4.0').then(m     => {
+import('./shared.js?v=1.4.5').then(m => { window._sharedModule = m; });
+import('./game.js?v=1.4.5').then(m   => { window._gameModule   = m; });
+import('./ai.js?v=1.4.5').then(m => {
   window._aiModule = m;
   window.playVsAI  = m.playVsAI;
+});
+import('./audio-hooks.js?v=1.4.5').then(m => {
+  m.initAudioHooks();
 });
 
 // ─── GESTIONE REDIRECT OAUTH (ritorno da Google/Microsoft redirect) ─────────
