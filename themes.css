@@ -276,22 +276,41 @@
 }
 
 /* ── THEME SWITCHER WIDGET (in lobby) ───────────────────────────────────────*/
-.theme-switcher {
+.theme-switcher-card {
+  background: var(--bg3);
+  border-radius: var(--radius);
+  padding: 10px 12px 6px;
+  text-align: center;
+  border: 1px solid var(--border);
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 6px;
+  min-width: 80px;
+}
+.theme-switcher-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.theme-switcher-lbl {
+  font-size: 11px;
+  color: var(--text3);
+  font-family: 'BurbankBig', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .theme-btn {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
   transition: border-color 0.15s, transform 0.15s;
   flex-shrink: 0;
-  position: relative;
 }
-.theme-btn:hover { transform: scale(1.15); }
+.theme-btn:hover { transform: scale(1.18); }
 .theme-btn.active { border-color: var(--gold); }
 .theme-btn[data-theme-id="classic"]      { background: #1a1917; box-shadow: inset 0 0 0 3px #e8a020; }
 .theme-btn[data-theme-id="modern-dark"]  { background: linear-gradient(135deg, #1c1b20 50%, #6ab0ff 50%); }

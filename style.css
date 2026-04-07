@@ -253,7 +253,7 @@
   .pc-zone-hi { color: var(--gold); font-weight: bold; font-size: 16px; }
 
   /* BASKET card with illustration */
-  .bc-img { width: 100%; aspect-ratio: 3/4; display: block; overflow: hidden; border-radius: 4px 4px 0 0; background: #0f0e0d; }
+  .bc-img { width: 100%; aspect-ratio: 1/1; display: block; overflow: hidden; border-radius: 4px 4px 0 0; background: #0f0e0d; }
   .bc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
   /* PHASE INDICATOR */

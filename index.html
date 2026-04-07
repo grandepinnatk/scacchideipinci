@@ -193,10 +193,10 @@
   margin-left: 3px;
   vertical-align: middle;
 }
-.pc-tier-l { background: rgba(212,168,67,0.25); color: #d4a843; border: 1px solid rgba(212,168,67,0.5); }
-.pc-tier-e { background: rgba(160,80,220,0.25); color: #b06ae0; border: 1px solid rgba(160,80,220,0.5); }
-.pc-tier-r { background: rgba(74,158,255,0.2);  color: #4a9eff; border: 1px solid rgba(74,158,255,0.4); }
-.pc-tier-c { background: rgba(255,255,255,0.06); color: var(--text3); border: 1px solid var(--border); }
+.pc-tier-l { background: #7a5000; color: #ffd97a; border: 1px solid #c89030; }
+.pc-tier-e { background: #5a1e8a; color: #e0aaff; border: 1px solid #9955cc; }
+.pc-tier-r { background: #0d3d7a; color: #90c8ff; border: 1px solid #2a70c8; }
+.pc-tier-c { background: #2e2c2a; color: #b0aca4; border: 1px solid #4a4845; }
 
 /* CARTE NON GIOCABILI nel basket */
 .bcard.locked {
@@ -254,10 +254,13 @@
     <div class="lobby-header">
       <div class="lobby-title">Scacchi dei Pinci</div>
       <div style="display:flex;align-items:center;gap:12px">
-        <div class="theme-switcher">
-          <button class="theme-btn active" data-theme-id="classic"      title="Classico"></button>
-          <button class="theme-btn"        data-theme-id="modern-dark"  title="Moderno scuro"></button>
-          <button class="theme-btn"        data-theme-id="modern-light" title="Moderno chiaro"></button>
+        <div class="theme-switcher-card">
+          <div class="theme-switcher-btns">
+            <button class="theme-btn active" data-theme-id="classic"      title="Classico"></button>
+            <button class="theme-btn"        data-theme-id="modern-dark"  title="Moderno scuro"></button>
+            <button class="theme-btn"        data-theme-id="modern-light" title="Moderno chiaro"></button>
+          </div>
+          <div class="theme-switcher-lbl">LAYOUT</div>
         </div>
         <div class="lobby-user">
           <div class="lobby-avatar" id="lobby-avatar">?</div>

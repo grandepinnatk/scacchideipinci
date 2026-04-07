@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Classifica — Scacchi dei Pinci</title>
+<link rel="stylesheet" href="themes.css?v=1.4.3">
 <style>
 @font-face {
     font-family: 'BurbankBig';
@@ -270,7 +271,17 @@ body {
 
     <div class="lobby-header">
       <div class="lobby-title">&#9876; Classifica globale</div>
-      <a class="btn-back" href="index.html">&#8592; Lobby</a>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="theme-switcher-card">
+          <div class="theme-switcher-btns">
+            <button class="theme-btn active" data-theme-id="classic"      title="Classico"></button>
+            <button class="theme-btn"        data-theme-id="modern-dark"  title="Moderno scuro"></button>
+            <button class="theme-btn"        data-theme-id="modern-light" title="Moderno chiaro"></button>
+          </div>
+          <div class="theme-switcher-lbl">LAYOUT</div>
+        </div>
+        <a class="btn-back" href="index.html">&#8592; Lobby</a>
+      </div>
     </div>
 
     <div class="lb-meta" id="lb-meta">Caricamento&hellip;</div>
@@ -505,6 +516,27 @@ document.getElementById('page-size').addEventListener('change', function(e) {
 onAuthStateChanged(auth, function(user) {
   loadLeaderboard(user ? user.uid : null);
 });
+</script>
+
+<script>
+(function() {
+  var THEMES = ['classic', 'modern-dark', 'modern-light'];
+  var saved = localStorage.getItem('sdp-theme') || 'classic';
+  if (!THEMES.includes(saved)) saved = 'classic';
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t === 'classic' ? '' : t);
+    document.querySelectorAll('.theme-btn').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-theme-id') === t);
+    });
+    localStorage.setItem('sdp-theme', t);
+  }
+  applyTheme(saved);
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.theme-btn');
+    if (!btn) return;
+    applyTheme(btn.getAttribute('data-theme-id'));
+  });
+})();
 </script>
 </body>
 </html>
